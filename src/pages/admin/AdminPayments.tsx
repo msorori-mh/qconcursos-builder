@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle, Clock, Eye, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/Navbar";
 import {
   Dialog,
   DialogContent,
@@ -32,29 +30,14 @@ const AdminPaymentsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (user) checkAdmin();
-  }, [user]);
-
-  useEffect(() => {
-    if (isAdmin) loadRequests();
-  }, [isAdmin, filter]);
-
-  const checkAdmin = async () => {
-    const { data } = await supabase.rpc("has_role", {
-      _user_id: user!.id,
-      _role: "admin",
-    });
-    setIsAdmin(!!data);
-    setLoading(false);
-  };
+    loadRequests();
+  }, [filter]);
 
   const loadRequests = async () => {
     let query = supabase
@@ -121,29 +104,6 @@ const AdminPaymentsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground">غير مصرح لك بالوصول</h1>
-          <p className="mt-2 text-muted-foreground">هذه الصفحة مخصصة للمشرفين فقط</p>
-          <Link to="/">
-            <Button variant="hero" className="mt-6">العودة للرئيسية</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const statusBadge = (status: string) => {
     const map: Record<string, { icon: any; text: string; cls: string }> = {
       pending: { icon: Clock, text: "قيد المراجعة", cls: "bg-accent/15 text-accent" },
@@ -161,15 +121,8 @@ const AdminPaymentsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-10">
-        <div className="mb-6 flex items-center gap-2">
-          <Link to="/grades" className="text-muted-foreground hover:text-primary">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">إدارة طلبات الدفع</h1>
-        </div>
+    <div>
+      <h1 className="mb-6 text-xl font-bold text-foreground">إدارة طلبات الدفع</h1>
 
         {/* Filters */}
         <div className="mb-6 flex gap-2 overflow-x-auto">
@@ -243,7 +196,6 @@ const AdminPaymentsPage = () => {
             ))}
           </div>
         )}
-      </div>
 
       {/* Review Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
