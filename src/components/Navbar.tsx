@@ -1,17 +1,25 @@
-import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const links = [
     { href: "/", label: "الرئيسية" },
     { href: "/grades", label: "الصفوف الدراسية" },
     { href: "/about", label: "من نحن" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -36,16 +44,26 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
-          <Button variant="hero" size="sm">
-            ابدأ التعلم
-          </Button>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                {user.user_metadata?.full_name || user.email?.split("@")[0] || "طالب"}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5">
+                <LogOut className="h-3.5 w-3.5" />
+                خروج
+              </Button>
+            </div>
+          ) : (
+            <Link to="/auth">
+              <Button variant="hero" size="sm">ابدأ التعلم</Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile toggle */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-foreground md:hidden"
-        >
+        <button onClick={() => setIsOpen(!isOpen)} className="text-foreground md:hidden">
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -66,9 +84,16 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
-            <Button variant="hero" size="sm" className="mt-2 w-full">
-              ابدأ التعلم
-            </Button>
+            {user ? (
+              <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
+                <LogOut className="h-3.5 w-3.5" />
+                تسجيل خروج
+              </Button>
+            ) : (
+              <Link to="/auth" onClick={() => setIsOpen(false)}>
+                <Button variant="hero" size="sm" className="mt-2 w-full">ابدأ التعلم</Button>
+              </Link>
+            )}
           </div>
         </div>
       )}
