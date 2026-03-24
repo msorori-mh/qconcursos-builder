@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,9 +44,10 @@ const AdminQuestions = () => {
   const [form, setForm] = useState(emptyForm);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => { loadRefs(); }, []);
-  useEffect(() => { loadQuestions(); }, [page]);
+  useEffect(() => { loadQuestions(); }, [page, searchTerm]);
 
   const loadRefs = async () => {
     const [{ data: lData }, { data: sData }] = await Promise.all([
@@ -62,11 +63,15 @@ const AdminQuestions = () => {
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data, count } = await supabase
+    let query = supabase
       .from("questions")
       .select("*, lessons(title), subjects(name)", { count: "exact" })
       .order("sort_order")
       .range(from, to);
+
+    if (searchTerm.trim()) query = query.ilike("question_text", `%${searchTerm.trim()}%`);
+
+    const { data, count } = await query;
 
     if (data) setQuestions(data as any);
     setTotalCount(count || 0);
@@ -149,6 +154,18 @@ const AdminQuestions = () => {
         <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
           <Plus className="h-4 w-4" /> إضافة سؤال
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            placeholder="ابحث في الأسئلة..."
+            className="pr-9"
+          />
+        </div>
       </div>
 
       {loading ? (
