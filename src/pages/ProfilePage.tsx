@@ -102,15 +102,6 @@ const ProfilePage = () => {
     setChangingPassword(false);
     setPasswordForm({ current: "", newPass: "", confirm: "" });
   };
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-      return;
-    }
-    setProfile((p) => p ? { ...p, ...editForm } : p);
-    setEditing(false);
-    toast({ title: "تم تحديث الملف الشخصي" });
-  };
-
   const completedCount = progress.filter((p) => p.completed).length;
   const avgScore = progress.filter((p) => p.quiz_score != null).reduce((acc, p, _, arr) => acc + (p.quiz_score || 0) / arr.length, 0);
   const activeSub = subscriptions.find((s) => s.status === "active");
