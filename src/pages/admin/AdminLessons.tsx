@@ -42,11 +42,12 @@ const AdminLessons = () => {
   const [editing, setEditing] = useState<Lesson | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [filterSubject, setFilterSubject] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => { loadSubjects(); }, []);
-  useEffect(() => { loadLessons(); }, [page, filterSubject]);
+  useEffect(() => { loadLessons(); }, [page, filterSubject, searchTerm]);
 
   const loadSubjects = async () => {
     const { data } = await supabase.from("subjects").select("id, name, grade_id, grades(name)").order("sort_order");
@@ -65,6 +66,7 @@ const AdminLessons = () => {
       .range(from, to);
 
     if (filterSubject) query = query.eq("subject_id", filterSubject);
+    if (searchTerm.trim()) query = query.ilike("title", `%${searchTerm.trim()}%`);
 
     const { data, count } = await query;
     if (data) setLessons(data as any);
@@ -134,7 +136,16 @@ const AdminLessons = () => {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            placeholder="ابحث في الدروس..."
+            className="pr-9"
+          />
+        </div>
         <select value={filterSubject} onChange={(e) => { setFilterSubject(e.target.value); setPage(1); }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm">
           <option value="">كل المواد</option>
