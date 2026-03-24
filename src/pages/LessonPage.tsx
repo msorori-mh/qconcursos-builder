@@ -1,54 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, FileText, Play, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 
-interface Lesson {
-  id: string;
-  title: string;
-  video_url: string | null;
-  content_text: string | null;
-  content_pdf_url: string | null;
-}
-
-interface Question {
-  id: string;
-  question_text: string;
-  options: string[];
-  correct_index: number;
-  explanation: string | null;
-}
-
 const LessonPage = () => {
   const { gradeId, subjectId, lessonId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz">("video");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      const [{ data: lessonData }, { data: questionsData }] = await Promise.all([
-        supabase.from("lessons").select("*").eq("id", lessonId!).single(),
-        supabase.from("questions").select("*").eq("lesson_id", lessonId!).order("sort_order"),
-      ]);
-      if (lessonData) setLesson(lessonData);
-      if (questionsData) setQuestions(questionsData.map((q: any) => ({
+  const { data: lesson, isLoading: lessonLoading } = useQuery({
+    queryKey: ["lesson", lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lessons").select("id, title, video_url, content_text, content_pdf_url").eq("id", lessonId!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!lessonId,
+  });
+
+  const { data: questions = [] } = useQuery({
+    queryKey: ["lesson-questions", lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("questions").select("id, question_text, options, correct_index, explanation").eq("lesson_id", lessonId!).order("sort_order");
+      if (error) throw error;
+      return (data || []).map((q: any) => ({
         ...q,
         options: typeof q.options === "string" ? JSON.parse(q.options) : q.options,
-      })));
-      setLoading(false);
-    };
-    load();
-  }, [lessonId]);
+      }));
+    },
+    enabled: !!lessonId,
+  });
 
   const handleAnswer = (questionId: string, optionIndex: number) => {
     if (showResults) return;
@@ -57,8 +47,8 @@ const LessonPage = () => {
 
   const handleSubmit = async () => {
     setShowResults(true);
-    // Mark lesson as completed
     if (user && lessonId) {
+      const score = questions.filter((q: any) => answers[q.id] === q.correct_index).length;
       const { data: existing } = await supabase
         .from("user_progress")
         .select("id")
@@ -66,28 +56,20 @@ const LessonPage = () => {
         .eq("lesson_id", lessonId)
         .limit(1);
 
-      const score = questions.filter((q) => answers[q.id] === q.correct_index).length;
+      const payload = { completed: true, completed_at: new Date().toISOString(), quiz_score: score };
 
       if (existing && existing.length > 0) {
-        await supabase.from("user_progress").update({
-          completed: true,
-          completed_at: new Date().toISOString(),
-          quiz_score: score,
-        }).eq("id", existing[0].id);
+        await supabase.from("user_progress").update(payload).eq("id", existing[0].id);
       } else {
-        await supabase.from("user_progress").insert({
-          user_id: user.id,
-          lesson_id: lessonId,
-          completed: true,
-          completed_at: new Date().toISOString(),
-          quiz_score: score,
-        });
+        await supabase.from("user_progress").insert({ user_id: user.id, lesson_id: lessonId, ...payload });
       }
+      // Invalidate progress cache
+      queryClient.invalidateQueries({ queryKey: ["user-progress"] });
       toast({ title: "تم حفظ تقدمك ✓" });
     }
   };
 
-  const correctCount = questions.filter((q) => answers[q.id] === q.correct_index).length;
+  const correctCount = questions.filter((q: any) => answers[q.id] === q.correct_index).length;
 
   const tabs = [
     { id: "video" as const, label: "الفيديو", icon: Play },
@@ -95,7 +77,7 @@ const LessonPage = () => {
     { id: "quiz" as const, label: "الأسئلة", icon: BookOpen },
   ];
 
-  if (loading) {
+  if (lessonLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -156,6 +138,7 @@ const LessonPage = () => {
                   src={lesson.video_url}
                   className="h-full w-full"
                   allowFullScreen
+                  loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </div>
@@ -221,11 +204,11 @@ const LessonPage = () => {
                   </div>
                 )}
 
-                {questions.map((q, qi) => (
+                {questions.map((q: any, qi: number) => (
                   <div key={q.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
                     <p className="mb-4 font-semibold text-card-foreground">{qi + 1}. {q.question_text}</p>
                     <div className="space-y-2">
-                      {(q.options as string[]).map((option, oi) => {
+                      {(q.options as string[]).map((option: string, oi: number) => {
                         const isSelected = answers[q.id] === oi;
                         const isCorrect = showResults && oi === q.correct_index;
                         const isWrong = showResults && isSelected && oi !== q.correct_index;
