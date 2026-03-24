@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Menu, X, LogOut, User } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +48,7 @@ const Navbar = () => {
           ))}
           {user ? (
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <NotificationBell />
               <Link to="/profile" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
                 <User className="h-4 w-4" />
@@ -58,9 +60,12 @@ const Navbar = () => {
               </Button>
             </div>
           ) : (
-            <Link to="/auth">
-              <Button variant="hero" size="sm">ابدأ التعلم</Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <Link to="/auth">
+                <Button variant="hero" size="sm">ابدأ التعلم</Button>
+              </Link>
+            </div>
           )}
         </div>
 
@@ -92,7 +97,10 @@ const Navbar = () => {
                   <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
                     <User className="h-4 w-4" /> ملفي الشخصي
                   </Link>
-                  <NotificationBell />
+                  <div className="flex items-center gap-2">
+                    <NotificationBell />
+                    <ThemeToggle />
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
                   <LogOut className="h-3.5 w-3.5" />
