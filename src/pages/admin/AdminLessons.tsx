@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import PaginationControls from "@/components/admin/PaginationControls";
+import FileUpload from "@/components/admin/FileUpload";
 
 interface Lesson {
   id: string;
@@ -210,14 +211,28 @@ const AdminLessons = () => {
                 </label>
               </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">رابط الفيديو</label>
-              <Input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} dir="ltr" placeholder="https://..." />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">رابط PDF</label>
-              <Input value={form.content_pdf_url} onChange={(e) => setForm({ ...form, content_pdf_url: e.target.value })} dir="ltr" placeholder="https://..." />
-            </div>
+            <FileUpload
+              bucket="lesson-videos"
+              accept="video/mp4,video/webm,video/ogg"
+              label="رفع فيديو"
+              icon="video"
+              maxSizeMB={500}
+              value={form.video_url}
+              onChange={(url) => setForm({ ...form, video_url: url })}
+            />
+            <p className="text-xs text-muted-foreground">أو أدخل رابط خارجي (YouTube مثلاً):</p>
+            <Input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} dir="ltr" placeholder="https://..." />
+            <FileUpload
+              bucket="lesson-pdfs"
+              accept="application/pdf"
+              label="رفع ملف PDF"
+              icon="pdf"
+              maxSizeMB={50}
+              value={form.content_pdf_url}
+              onChange={(url) => setForm({ ...form, content_pdf_url: url })}
+            />
+            <p className="text-xs text-muted-foreground">أو أدخل رابط خارجي:</p>
+            <Input value={form.content_pdf_url} onChange={(e) => setForm({ ...form, content_pdf_url: e.target.value })} dir="ltr" placeholder="https://..." />
             <div>
               <label className="mb-1 block text-sm font-medium">محتوى نصي</label>
               <textarea value={form.content_text} onChange={(e) => setForm({ ...form, content_text: e.target.value })}
