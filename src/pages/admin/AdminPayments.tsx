@@ -80,6 +80,16 @@ const AdminPaymentsPage = () => {
 
       if (payErr) throw payErr;
 
+      // Send notification to student
+      await supabase.from("notifications").insert({
+        user_id: selectedRequest.user_id,
+        title: action === "approved" ? "تم قبول طلب الدفع" : "تم رفض طلب الدفع",
+        message: action === "approved"
+          ? "تم قبول طلب الدفع الخاص بك وتفعيل اشتراكك. يمكنك الآن الوصول لجميع الدروس."
+          : `تم رفض طلب الدفع الخاص بك.${adminNotes ? ` السبب: ${adminNotes}` : " يرجى التواصل مع الإدارة."}`,
+        type: action === "approved" ? "success" : "error",
+      });
+
       if (action === "approved" && selectedRequest.subscription_id) {
         const now = new Date();
         const expires = new Date(now);
