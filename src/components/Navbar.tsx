@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Menu, X, LogOut, User } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +47,7 @@ const Navbar = () => {
           ))}
           {user ? (
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <Link to="/profile" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
                 <User className="h-4 w-4" />
                 {user.user_metadata?.full_name || user.email?.split("@")[0] || "طالب"}
@@ -86,9 +88,12 @@ const Navbar = () => {
             ))}
             {user ? (
               <>
-                <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                  <User className="h-4 w-4" /> ملفي الشخصي
-                </Link>
+                <div className="flex items-center justify-between">
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <User className="h-4 w-4" /> ملفي الشخصي
+                  </Link>
+                  <NotificationBell />
+                </div>
                 <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
                   <LogOut className="h-3.5 w-3.5" />
                   تسجيل خروج
