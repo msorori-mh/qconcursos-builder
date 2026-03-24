@@ -46,10 +46,10 @@ const Navbar = () => {
           ))}
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Link to="/profile" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
                 <User className="h-4 w-4" />
                 {user.user_metadata?.full_name || user.email?.split("@")[0] || "طالب"}
-              </span>
+              </Link>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5">
                 <LogOut className="h-3.5 w-3.5" />
                 خروج
@@ -85,10 +85,15 @@ const Navbar = () => {
               </Link>
             ))}
             {user ? (
-              <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
-                <LogOut className="h-3.5 w-3.5" />
-                تسجيل خروج
-              </Button>
+              <>
+                <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                  <User className="h-4 w-4" /> ملفي الشخصي
+                </Link>
+                <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
+                  <LogOut className="h-3.5 w-3.5" />
+                  تسجيل خروج
+                </Button>
+              </>
             ) : (
               <Link to="/auth" onClick={() => setIsOpen(false)}>
                 <Button variant="hero" size="sm" className="mt-2 w-full">ابدأ التعلم</Button>

@@ -19,6 +19,7 @@ const LessonPage = lazy(() => import("./pages/LessonPage.tsx"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage.tsx"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.tsx"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout.tsx"));
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons/:lessonId" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
               <Route path="/subscribe" element={<ProtectedRoute><SubscribePage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<AdminLayout />}>
