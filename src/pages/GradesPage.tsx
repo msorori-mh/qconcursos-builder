@@ -1,17 +1,71 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 
-const grades = [
-  { id: "7", name: "الصف السابع", stage: "إعدادي", subjects: 8 },
-  { id: "8", name: "الصف الثامن", stage: "إعدادي", subjects: 8 },
-  { id: "9", name: "الصف التاسع", stage: "إعدادي", subjects: 8 },
-  { id: "10", name: "الصف الأول الثانوي", stage: "ثانوي", subjects: 9 },
-  { id: "11", name: "الصف الثاني الثانوي", stage: "ثانوي", subjects: 9 },
-  { id: "12", name: "الصف الثالث الثانوي", stage: "ثانوي", subjects: 9, special: true },
-];
+interface Grade {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  sort_order: number;
+}
 
 const GradesPage = () => {
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("grades")
+      .select("*")
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data) setGrades(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const prep = grades.filter((g) => g.category === "إعدادي");
+  const sec = grades.filter((g) => g.category === "ثانوي");
+  const isThirdSec = (g: Grade) => g.sort_order === 6; // grade-12
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      </div>
+    );
+  }
+
+  const GradeCard = ({ grade, i, special }: { grade: Grade; i: number; special?: boolean }) => (
+    <Link
+      key={grade.id}
+      to={`/grades/${grade.id}/subjects`}
+      className="group opacity-0 animate-fade-in-up"
+      style={{ animationDelay: `${i * 0.1}s` }}
+    >
+      <div className={`rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 ${special ? "ring-2 ring-accent" : ""}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${special ? "bg-accent/20" : "bg-primary/10"}`}>
+              <BookOpen className={`h-6 w-6 ${special ? "text-accent" : "text-primary"}`} />
+            </div>
+            <div>
+              <h3 className="font-bold text-card-foreground">{grade.name}</h3>
+              {special && <span className="text-sm text-accent font-semibold">نماذج وزارية</span>}
+            </div>
+          </div>
+          <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1" />
+        </div>
+      </div>
+    </Link>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -21,68 +75,23 @@ const GradesPage = () => {
           <p className="text-muted-foreground">اختر صفك الدراسي للوصول إلى المحتوى التعليمي</p>
         </div>
 
-        {/* إعدادي */}
-        <div className="mb-10">
-          <h2 className="mb-4 text-lg font-bold text-foreground">المرحلة الإعدادية</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {grades.filter(g => g.stage === "إعدادي").map((grade, i) => (
-              <Link
-                key={grade.id}
-                to={`/grades/${grade.id}/subjects`}
-                className="group opacity-0 animate-fade-in-up"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                        <BookOpen className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-card-foreground">{grade.name}</h3>
-                        <p className="text-sm text-muted-foreground">{grade.subjects} مواد دراسية</p>
-                      </div>
-                    </div>
-                    <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1" />
-                  </div>
-                </div>
-              </Link>
-            ))}
+        {prep.length > 0 && (
+          <div className="mb-10">
+            <h2 className="mb-4 text-lg font-bold text-foreground">المرحلة الإعدادية</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {prep.map((g, i) => <GradeCard key={g.id} grade={g} i={i} />)}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ثانوي */}
-        <div>
-          <h2 className="mb-4 text-lg font-bold text-foreground">المرحلة الثانوية</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {grades.filter(g => g.stage === "ثانوي").map((grade, i) => (
-              <Link
-                key={grade.id}
-                to={`/grades/${grade.id}/subjects`}
-                className="group opacity-0 animate-fade-in-up"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className={`rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 ${grade.special ? "ring-2 ring-accent" : ""}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${grade.special ? "bg-accent/20" : "bg-primary/10"}`}>
-                        <BookOpen className={`h-6 w-6 ${grade.special ? "text-accent" : "text-primary"}`} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-card-foreground">{grade.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {grade.subjects} مواد دراسية
-                          {grade.special && <span className="mr-2 text-accent font-semibold">• نماذج وزارية</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1" />
-                  </div>
-                </div>
-              </Link>
-            ))}
+        {sec.length > 0 && (
+          <div>
+            <h2 className="mb-4 text-lg font-bold text-foreground">المرحلة الثانوية</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sec.map((g, i) => <GradeCard key={g.id} grade={g} i={i} special={isThirdSec(g)} />)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
