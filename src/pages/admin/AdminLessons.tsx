@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import PaginationControls from "@/components/admin/PaginationControls";
+import FileUpload from "@/components/admin/FileUpload";
 
 interface Lesson {
   id: string;
