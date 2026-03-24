@@ -94,6 +94,102 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          created_at: string
+          details: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          type: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      payment_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          payment_method_id: string | null
+          receipt_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_method_id?: string | null
+          receipt_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_method_id?: string | null
+          receipt_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -221,6 +317,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subjects_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "grades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          grade_id: string | null
+          id: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          grade_id?: string | null
+          id?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          grade_id?: string | null
+          id?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_grade_id_fkey"
             columns: ["grade_id"]
             isOneToOne: false
             referencedRelation: "grades"

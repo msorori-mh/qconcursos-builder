@@ -11,6 +11,8 @@ import SubjectsPage from "./pages/SubjectsPage.tsx";
 import LessonsPage from "./pages/LessonsPage.tsx";
 import LessonPage from "./pages/LessonPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
+import SubscribePage from "./pages/SubscribePage.tsx";
+import AdminPaymentsPage from "./pages/AdminPaymentsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
             <Route path="/grades/:gradeId/subjects" element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
             <Route path="/grades/:gradeId/subjects/:subjectId/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />
             <Route path="/grades/:gradeId/subjects/:subjectId/lessons/:lessonId" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
+            <Route path="/subscribe" element={<ProtectedRoute><SubscribePage /></ProtectedRoute>} />
+            <Route path="/admin/payments" element={<ProtectedRoute><AdminPaymentsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
