@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import LazyMedia from "@/components/LazyMedia";
+import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 
 const LessonPage = () => {
   const { gradeId, subjectId, lessonId } = useParams();
@@ -133,15 +135,22 @@ const LessonPage = () => {
         {activeTab === "video" && (
           <div className="animate-fade-in-up">
             {lesson.video_url ? (
-              <div className="aspect-video overflow-hidden rounded-2xl border border-border">
+              <LazyMedia
+                className="aspect-video overflow-hidden rounded-2xl border border-border"
+                placeholder={
+                  <div className="aspect-video rounded-2xl border border-border bg-muted flex items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                  </div>
+                }
+              >
                 <iframe
-                  src={lesson.video_url}
+                  src={getEmbedUrl(lesson.video_url)}
                   className="h-full w-full"
                   allowFullScreen
                   loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
-              </div>
+              </LazyMedia>
             ) : (
               <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-muted flex items-center justify-center">
                 <div className="text-center">
@@ -169,7 +178,7 @@ const LessonPage = () => {
                 <p className="text-center text-muted-foreground py-8">لم يُضف محتوى نصي بعد</p>
               )}
               {lesson.content_pdf_url && (
-                <a href={lesson.content_pdf_url} target="_blank" rel="noopener noreferrer"
+                <a href={getCdnUrl(lesson.content_pdf_url)} target="_blank" rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
                   <FileText className="h-4 w-4" />
                   تحميل ملف PDF
