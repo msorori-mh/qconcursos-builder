@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import PaginationControls from "@/components/admin/PaginationControls";
 
 interface Lesson {
   id: string;
@@ -24,6 +25,8 @@ interface Lesson {
 
 interface Subject { id: string; name: string; grade_id: string; grades?: { name: string } }
 
+const PAGE_SIZE = 20;
+
 const emptyForm = {
   title: "", slug: "", subject_id: "", duration: "", is_free: true,
   video_url: "", content_text: "", content_pdf_url: "", sort_order: 0,
@@ -38,16 +41,33 @@ const AdminLessons = () => {
   const [editing, setEditing] = useState<Lesson | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [filterSubject, setFilterSubject] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { loadSubjects(); }, []);
+  useEffect(() => { loadLessons(); }, [page, filterSubject]);
 
-  const load = async () => {
-    const [{ data: lData }, { data: sData }] = await Promise.all([
-      supabase.from("lessons").select("*, subjects(name, grades(name))").order("sort_order"),
-      supabase.from("subjects").select("id, name, grade_id, grades(name)").order("sort_order"),
-    ]);
-    if (lData) setLessons(lData as any);
-    if (sData) setSubjects(sData as any);
+  const loadSubjects = async () => {
+    const { data } = await supabase.from("subjects").select("id, name, grade_id, grades(name)").order("sort_order");
+    if (data) setSubjects(data as any);
+  };
+
+  const loadLessons = async () => {
+    setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
+      .from("lessons")
+      .select("*, subjects(name, grades(name))", { count: "exact" })
+      .order("sort_order")
+      .range(from, to);
+
+    if (filterSubject) query = query.eq("subject_id", filterSubject);
+
+    const { data, count } = await query;
+    if (data) setLessons(data as any);
+    setTotalCount(count || 0);
     setLoading(false);
   };
 
@@ -88,7 +108,7 @@ const AdminLessons = () => {
     }
     toast({ title: editing ? "تم التعديل" : "تمت الإضافة" });
     setDialogOpen(false);
-    load();
+    loadLessons();
   };
 
   const remove = async (id: string) => {
@@ -96,23 +116,25 @@ const AdminLessons = () => {
     const { error } = await supabase.from("lessons").delete().eq("id", id);
     if (error) { toast({ title: "خطأ", description: error.message, variant: "destructive" }); return; }
     toast({ title: "تم الحذف" });
-    load();
+    loadLessons();
   };
 
-  const filtered = filterSubject ? lessons.filter((l) => l.subject_id === filterSubject) : lessons;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-foreground">إدارة الدروس</h1>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">إدارة الدروس</h1>
+          <p className="text-sm text-muted-foreground">{totalCount} درس</p>
+        </div>
         <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
           <Plus className="h-4 w-4" /> إضافة درس
         </Button>
       </div>
 
-      {/* Filter */}
       <div className="mb-4">
-        <select value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)}
+        <select value={filterSubject} onChange={(e) => { setFilterSubject(e.target.value); setPage(1); }}
           className="rounded-md border border-input bg-background px-3 py-2 text-sm">
           <option value="">كل المواد</option>
           {subjects.map((s) => (
@@ -125,29 +147,32 @@ const AdminLessons = () => {
         <div className="flex justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : lessons.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
           <p className="text-muted-foreground">لا توجد دروس</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((l) => (
-            <div key={l.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div>
-                <h3 className="font-semibold text-card-foreground">{l.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {(l as any).subjects?.grades?.name} — {(l as any).subjects?.name}
-                  {l.duration && ` • ${l.duration}`}
-                  {l.is_free ? " • مجاني" : " • مدفوع"}
-                </p>
+        <>
+          <div className="space-y-3">
+            {lessons.map((l) => (
+              <div key={l.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div>
+                  <h3 className="font-semibold text-card-foreground">{l.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {(l as any).subjects?.grades?.name} — {(l as any).subjects?.name}
+                    {l.duration && ` • ${l.duration}`}
+                    {l.is_free ? " • مجاني" : " • مدفوع"}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={() => remove(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => remove(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalCount={totalCount} pageSize={PAGE_SIZE} />
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
