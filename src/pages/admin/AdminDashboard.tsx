@@ -22,6 +22,7 @@ const AdminDashboard = () => {
   });
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAllStats();
