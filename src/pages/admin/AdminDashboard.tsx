@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   GraduationCap, BookOpen, FileText, HelpCircle, CreditCard,
-  Users, TrendingUp, DollarSign, UserCheck, UserX, Clock,
+  Users, TrendingUp, DollarSign, UserCheck, Clock, Download,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
@@ -11,6 +13,7 @@ import {
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--success))", "hsl(var(--destructive))"];
 
 const AdminDashboard = () => {
+  const { toast } = useToast();
   const [stats, setStats] = useState({
     grades: 0, subjects: 0, lessons: 0, questions: 0,
     pendingPayments: 0, totalStudents: 0,
@@ -18,6 +21,7 @@ const AdminDashboard = () => {
     totalRevenue: 0, approvedPayments: 0, rejectedPayments: 0,
   });
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
+  const [exporting, setExporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -92,6 +96,58 @@ const AdminDashboard = () => {
     { name: "مرفوضة", count: stats.rejectedPayments },
   ];
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const bom = "\uFEFF";
+    const csv = bom + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportStudents = async () => {
+    setExporting("students");
+    try {
+      const { data } = await supabase.from("profiles").select("full_name, phone, created_at");
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      downloadCSV("students.csv", ["الاسم", "الهاتف", "تاريخ التسجيل"], data.map((p: any) => [
+        p.full_name || "", p.phone || "", new Date(p.created_at).toLocaleDateString("ar-YE"),
+      ]));
+      toast({ title: "تم تصدير بيانات الطلاب" });
+    } finally { setExporting(null); }
+  };
+
+  const exportSubscriptions = async () => {
+    setExporting("subs");
+    try {
+      const { data } = await supabase.from("subscriptions").select("user_id, status, starts_at, expires_at, created_at");
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      // Fetch profile names separately
+      const userIds = [...new Set(data.map((s: any) => s.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const nameMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p.full_name]));
+      downloadCSV("subscriptions.csv", ["الطالب", "الحالة", "تاريخ البدء", "تاريخ الانتهاء"], data.map((s: any) => [
+        nameMap[s.user_id] || "", s.status, s.starts_at ? new Date(s.starts_at).toLocaleDateString("ar-YE") : "", s.expires_at ? new Date(s.expires_at).toLocaleDateString("ar-YE") : "",
+      ]));
+      toast({ title: "تم تصدير بيانات الاشتراكات" });
+    } finally { setExporting(null); }
+  };
+
+  const exportPayments = async () => {
+    setExporting("payments");
+    try {
+      const { data } = await supabase.from("payment_requests").select("amount, status, created_at, profiles!payment_requests_user_id_fkey(full_name), payment_methods(name)").order("created_at", { ascending: false });
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      downloadCSV("payments.csv", ["الطالب", "المبلغ", "الطريقة", "الحالة", "التاريخ"], data.map((p: any) => [
+        p.profiles?.full_name || "", String(p.amount), p.payment_methods?.name || "", p.status, new Date(p.created_at).toLocaleDateString("ar-YE"),
+      ]));
+      toast({ title: "تم تصدير بيانات المدفوعات" });
+    } finally { setExporting(null); }
+  };
+
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       pending: "bg-accent/15 text-accent",
@@ -116,7 +172,23 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-foreground">لوحة الإحصائيات</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-foreground">لوحة الإحصائيات</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportStudents}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "students" ? "جاري التصدير..." : "تصدير الطلاب"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportSubscriptions}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "subs" ? "جاري التصدير..." : "تصدير الاشتراكات"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportPayments}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "payments" ? "جاري التصدير..." : "تصدير المدفوعات"}
+          </Button>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
