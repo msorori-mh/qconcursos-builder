@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import PaginationControls from "@/components/admin/PaginationControls";
 
 interface Question {
   id: string;
@@ -25,6 +26,8 @@ interface Question {
 interface Lesson { id: string; title: string; subjects?: { name: string; grades?: { name: string } } }
 interface Subject { id: string; name: string; }
 
+const PAGE_SIZE = 20;
+
 const emptyForm = {
   question_text: "", options: ["", "", "", ""], correct_index: 0,
   explanation: "", lesson_id: "", subject_id: "", question_type: "lesson", sort_order: 0,
@@ -39,18 +42,34 @@ const AdminQuestions = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { loadRefs(); }, []);
+  useEffect(() => { loadQuestions(); }, [page]);
 
-  const load = async () => {
-    const [{ data: qData }, { data: lData }, { data: sData }] = await Promise.all([
-      supabase.from("questions").select("*, lessons(title), subjects(name)").order("sort_order").limit(100),
+  const loadRefs = async () => {
+    const [{ data: lData }, { data: sData }] = await Promise.all([
       supabase.from("lessons").select("id, title, subjects(name, grades(name))").order("sort_order"),
       supabase.from("subjects").select("id, name").order("sort_order"),
     ]);
-    if (qData) setQuestions(qData as any);
     if (lData) setLessons(lData as any);
     if (sData) setSubjects(sData);
+  };
+
+  const loadQuestions = async () => {
+    setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, count } = await supabase
+      .from("questions")
+      .select("*, lessons(title), subjects(name)", { count: "exact" })
+      .order("sort_order")
+      .range(from, to);
+
+    if (data) setQuestions(data as any);
+    setTotalCount(count || 0);
     setLoading(false);
   };
 
@@ -102,14 +121,14 @@ const AdminQuestions = () => {
     }
     toast({ title: editing ? "تم التعديل" : "تمت الإضافة" });
     setDialogOpen(false);
-    load();
+    loadQuestions();
   };
 
   const remove = async (id: string) => {
     if (!confirm("حذف السؤال؟")) return;
     await supabase.from("questions").delete().eq("id", id);
     toast({ title: "تم الحذف" });
-    load();
+    loadQuestions();
   };
 
   const updateOption = (index: number, value: string) => {
@@ -118,10 +137,15 @@ const AdminQuestions = () => {
     setForm({ ...form, options: opts });
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">إدارة الأسئلة</h1>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">إدارة الأسئلة</h1>
+          <p className="text-sm text-muted-foreground">{totalCount} سؤال</p>
+        </div>
         <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
           <Plus className="h-4 w-4" /> إضافة سؤال
         </Button>
@@ -136,23 +160,26 @@ const AdminQuestions = () => {
           <p className="text-muted-foreground">لا توجد أسئلة بعد</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {questions.map((q) => (
-            <div key={q.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-card-foreground line-clamp-2">{q.question_text}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {q.lessons?.title || q.subjects?.name || "عام"}
-                  {" • "}{(q.options as string[]).length} خيارات
-                </p>
+        <>
+          <div className="space-y-3">
+            {questions.map((q) => (
+              <div key={q.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-card-foreground line-clamp-2">{q.question_text}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {q.lessons?.title || q.subjects?.name || "عام"}
+                    {" • "}{(q.options as string[]).length} خيارات
+                  </p>
+                </div>
+                <div className="flex gap-2 mr-3">
+                  <Button variant="outline" size="icon" onClick={() => openEdit(q)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={() => remove(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
               </div>
-              <div className="flex gap-2 mr-3">
-                <Button variant="outline" size="icon" onClick={() => openEdit(q)}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" onClick={() => remove(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalCount={totalCount} pageSize={PAGE_SIZE} />
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

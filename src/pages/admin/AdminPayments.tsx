@@ -5,12 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import PaginationControls from "@/components/admin/PaginationControls";
 
 interface PaymentRequest {
   id: string;
@@ -26,6 +23,8 @@ interface PaymentRequest {
   payment_methods?: { name: string; type: string } | null;
 }
 
+const PAGE_SIZE = 20;
+
 const AdminPaymentsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -34,23 +33,34 @@ const AdminPaymentsPage = () => {
   const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   useEffect(() => {
     loadRequests();
-  }, [filter]);
+  }, [filter, page]);
 
   const loadRequests = async () => {
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
     let query = supabase
       .from("payment_requests")
-      .select("*, profiles!payment_requests_user_id_fkey(full_name, phone), payment_methods(name, type)")
-      .order("created_at", { ascending: false });
+      .select("*, profiles!payment_requests_user_id_fkey(full_name, phone), payment_methods(name, type)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (filter !== "all") {
       query = query.eq("status", filter);
     }
 
-    const { data } = await query;
+    const { data, count } = await query;
     if (data) setRequests(data as any);
+    setTotalCount(count || 0);
   };
 
   const handleAction = async (action: "approved" | "rejected") => {
@@ -58,7 +68,6 @@ const AdminPaymentsPage = () => {
     setProcessing(true);
 
     try {
-      // Update payment request
       const { error: payErr } = await supabase
         .from("payment_requests")
         .update({
@@ -71,7 +80,6 @@ const AdminPaymentsPage = () => {
 
       if (payErr) throw payErr;
 
-      // If approved, activate subscription
       if (action === "approved" && selectedRequest.subscription_id) {
         const now = new Date();
         const expires = new Date(now);
@@ -120,38 +128,42 @@ const AdminPaymentsPage = () => {
     );
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   return (
     <div>
-      <h1 className="mb-6 text-xl font-bold text-foreground">إدارة طلبات الدفع</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-foreground">إدارة طلبات الدفع</h1>
+        <p className="text-sm text-muted-foreground">{totalCount} طلب</p>
+      </div>
 
-        {/* Filters */}
-        <div className="mb-6 flex gap-2 overflow-x-auto">
-          {([
-            { key: "pending", label: "قيد المراجعة" },
-            { key: "approved", label: "مقبولة" },
-            { key: "rejected", label: "مرفوضة" },
-            { key: "all", label: "الكل" },
-          ] as const).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                filter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="mb-6 flex gap-2 overflow-x-auto">
+        {([
+          { key: "pending", label: "قيد المراجعة" },
+          { key: "approved", label: "مقبولة" },
+          { key: "rejected", label: "مرفوضة" },
+          { key: "all", label: "الكل" },
+        ] as const).map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              filter === f.key
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
+          <p className="text-muted-foreground">لا توجد طلبات {filter !== "all" ? "في هذه الفئة" : ""}</p>
         </div>
-
-        {/* Requests list */}
-        {requests.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
-            <p className="text-muted-foreground">لا توجد طلبات {filter !== "all" ? "في هذه الفئة" : ""}</p>
-          </div>
-        ) : (
+      ) : (
+        <>
           <div className="space-y-3">
             {requests.map((req) => (
               <div
@@ -195,9 +207,10 @@ const AdminPaymentsPage = () => {
               </div>
             ))}
           </div>
-        )}
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalCount={totalCount} pageSize={PAGE_SIZE} />
+        </>
+      )}
 
-      {/* Review Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
