@@ -101,6 +101,7 @@ const Navbar = () => {
                     <NotificationBell />
                     <ThemeToggle />
                   </div>
+                </div>
                 <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
                   <LogOut className="h-3.5 w-3.5" />
                   تسجيل خروج
