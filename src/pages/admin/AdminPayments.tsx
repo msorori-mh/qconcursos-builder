@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle, Clock, Eye, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/Navbar";
 import {
   Dialog,
   DialogContent,
