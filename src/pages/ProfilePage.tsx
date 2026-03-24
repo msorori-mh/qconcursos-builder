@@ -162,6 +162,35 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* Change Password */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-card-foreground">
+            <Lock className="h-5 w-5 text-primary" /> كلمة المرور
+          </h2>
+          {changingPassword ? (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">كلمة المرور الجديدة</label>
+                <Input type="password" value={passwordForm.newPass} onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })} placeholder="6 أحرف على الأقل" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">تأكيد كلمة المرور</label>
+                <Input type="password" value={passwordForm.confirm} onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="hero" size="sm" onClick={changePassword} disabled={savingPassword}>
+                  {savingPassword ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setChangingPassword(false); setPasswordForm({ current: "", newPass: "", confirm: "" }); }}>إلغاء</Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)} className="gap-2">
+              <Lock className="h-4 w-4" /> تغيير كلمة المرور
+            </Button>
+          )}
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
