@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X,
+  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
 } from "lucide-react";
 
 interface Profile {
