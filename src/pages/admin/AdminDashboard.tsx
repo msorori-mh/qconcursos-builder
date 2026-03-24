@@ -123,10 +123,14 @@ const AdminDashboard = () => {
   const exportSubscriptions = async () => {
     setExporting("subs");
     try {
-      const { data } = await supabase.from("subscriptions").select("status, starts_at, expires_at, created_at, profiles!subscriptions_user_id_fkey(full_name)");
+      const { data } = await supabase.from("subscriptions").select("user_id, status, starts_at, expires_at, created_at");
       if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      // Fetch profile names separately
+      const userIds = [...new Set(data.map((s: any) => s.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const nameMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p.full_name]));
       downloadCSV("subscriptions.csv", ["الطالب", "الحالة", "تاريخ البدء", "تاريخ الانتهاء"], data.map((s: any) => [
-        s.profiles?.full_name || "", s.status, s.starts_at ? new Date(s.starts_at).toLocaleDateString("ar-YE") : "", s.expires_at ? new Date(s.expires_at).toLocaleDateString("ar-YE") : "",
+        nameMap[s.user_id] || "", s.status, s.starts_at ? new Date(s.starts_at).toLocaleDateString("ar-YE") : "", s.expires_at ? new Date(s.expires_at).toLocaleDateString("ar-YE") : "",
       ]));
       toast({ title: "تم تصدير بيانات الاشتراكات" });
     } finally { setExporting(null); }
