@@ -12,6 +12,8 @@ import LessonsPage from "./pages/LessonsPage.tsx";
 import LessonPage from "./pages/LessonPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import SubscribePage from "./pages/SubscribePage.tsx";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
+import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 import AdminLayout from "./components/admin/AdminLayout.tsx";
@@ -35,6 +37,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/grades" element={<ProtectedRoute><GradesPage /></ProtectedRoute>} />
             <Route path="/grades/:gradeId/subjects" element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
             <Route path="/grades/:gradeId/subjects/:subjectId/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />

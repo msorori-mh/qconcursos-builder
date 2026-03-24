@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, Mail, Phone, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,6 +200,14 @@ const AuthPage = () => {
             {loading ? "جاري المعالجة..." : mode === "login" ? "تسجيل الدخول" : "إنشاء الحساب"}
             <ArrowRight className="h-4 w-4" />
           </Button>
+
+          {mode === "login" && method === "email" && (
+            <div className="text-center">
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                نسيت كلمة المرور؟
+              </Link>
+            </div>
+          )}
         </form>
 
         {/* Toggle mode */}
