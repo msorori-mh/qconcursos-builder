@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X,
+  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
 } from "lucide-react";
 
 interface Profile {
@@ -43,6 +43,9 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: "", phone: "" });
+  const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     if (user) loadData();
@@ -79,6 +82,26 @@ const ProfilePage = () => {
     toast({ title: "تم تحديث الملف الشخصي" });
   };
 
+  const changePassword = async () => {
+    if (!passwordForm.newPass || passwordForm.newPass.length < 6) {
+      toast({ title: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPass !== passwordForm.confirm) {
+      toast({ title: "كلمتا المرور غير متطابقتين", variant: "destructive" });
+      return;
+    }
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: passwordForm.newPass });
+    setSavingPassword(false);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "تم تغيير كلمة المرور بنجاح" });
+    setChangingPassword(false);
+    setPasswordForm({ current: "", newPass: "", confirm: "" });
+  };
   const completedCount = progress.filter((p) => p.completed).length;
   const avgScore = progress.filter((p) => p.quiz_score != null).reduce((acc, p, _, arr) => acc + (p.quiz_score || 0) / arr.length, 0);
   const activeSub = subscriptions.find((s) => s.status === "active");
@@ -137,6 +160,35 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Change Password */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-card-foreground">
+            <Lock className="h-5 w-5 text-primary" /> كلمة المرور
+          </h2>
+          {changingPassword ? (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">كلمة المرور الجديدة</label>
+                <Input type="password" value={passwordForm.newPass} onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })} placeholder="6 أحرف على الأقل" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">تأكيد كلمة المرور</label>
+                <Input type="password" value={passwordForm.confirm} onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="hero" size="sm" onClick={changePassword} disabled={savingPassword}>
+                  {savingPassword ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setChangingPassword(false); setPasswordForm({ current: "", newPass: "", confirm: "" }); }}>إلغاء</Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)} className="gap-2">
+              <Lock className="h-4 w-4" /> تغيير كلمة المرور
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
