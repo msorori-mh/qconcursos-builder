@@ -13,6 +13,7 @@ import {
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--success))", "hsl(var(--destructive))"];
 
 const AdminDashboard = () => {
+  const { toast } = useToast();
   const [stats, setStats] = useState({
     grades: 0, subjects: 0, lessons: 0, questions: 0,
     pendingPayments: 0, totalStudents: 0,
@@ -20,7 +21,7 @@ const AdminDashboard = () => {
     totalRevenue: 0, approvedPayments: 0, rejectedPayments: 0,
   });
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
     loadAllStats();
