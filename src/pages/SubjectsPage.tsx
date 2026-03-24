@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 
@@ -8,42 +8,33 @@ const iconMap: Record<string, any> = {
   Calculator, Globe, FlaskConical, Atom, BookText, BookOpen, Dumbbell,
 };
 
-interface Subject {
-  id: string;
-  name: string;
-  slug: string;
-  icon: string | null;
-  color: string | null;
-  lessons_count: number | null;
-}
-
-interface Grade {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-}
-
 const SubjectsPage = () => {
   const { gradeId } = useParams();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [grade, setGrade] = useState<Grade | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      const [{ data: gradeData }, { data: subjectsData }] = await Promise.all([
-        supabase.from("grades").select("*").eq("id", gradeId!).single(),
-        supabase.from("subjects").select("*").eq("grade_id", gradeId!).order("sort_order"),
-      ]);
-      if (gradeData) setGrade(gradeData);
-      if (subjectsData) setSubjects(subjectsData);
-      setLoading(false);
-    };
-    load();
-  }, [gradeId]);
+  const { data: grade } = useQuery({
+    queryKey: ["grade", gradeId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("grades").select("id, name, slug, category").eq("id", gradeId!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!gradeId,
+  });
 
-  if (loading) {
+  const { data: subjects = [], isLoading } = useQuery({
+    queryKey: ["subjects", gradeId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("subjects").select("id, name, slug, icon, color, lessons_count").eq("grade_id", gradeId!).order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!gradeId,
+  });
+
+  const gradeName = grade?.name || "الصف الدراسي";
+  const isThirdSec = grade?.slug === "grade-12";
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -53,9 +44,6 @@ const SubjectsPage = () => {
       </div>
     );
   }
-
-  const gradeName = grade?.name || "الصف الدراسي";
-  const isThirdSec = grade?.slug === "grade-12";
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +69,6 @@ const SubjectsPage = () => {
             {subjects.map((subject, i) => {
               const IconComp = iconMap[subject.icon || "BookOpen"] || BookOpen;
               const color = subject.color || "#3b82f6";
-
               return (
                 <Link
                   key={subject.id}
@@ -91,10 +78,7 @@ const SubjectsPage = () => {
                 >
                   <div className="rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1">
                     <div className="flex items-center gap-4">
-                      <div
-                        className="flex h-14 w-14 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: color + "18" }}
-                      >
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl" style={{ backgroundColor: color + "18" }}>
                         <IconComp className="h-7 w-7" style={{ color }} />
                       </div>
                       <div className="flex-1">

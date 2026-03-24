@@ -1,80 +1,70 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, FileText, HelpCircle, CheckCircle, Clock, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
-
-interface Lesson {
-  id: string;
-  title: string;
-  duration: string | null;
-  is_free: boolean | null;
-  slug: string;
-}
 
 const LessonsPage = () => {
   const { gradeId, subjectId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [progress, setProgress] = useState<Record<string, boolean>>({});
-  const [hasSubscription, setHasSubscription] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [subjectId, user]);
+  const { data: lessons = [], isLoading } = useQuery({
+    queryKey: ["lessons", subjectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lessons")
+        .select("id, title, duration, is_free, slug")
+        .eq("subject_id", subjectId!)
+        .order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!subjectId,
+  });
 
-  const loadData = async () => {
-    // Load lessons
-    const { data: lessonsData } = await supabase
-      .from("lessons")
-      .select("id, title, duration, is_free, slug")
-      .eq("subject_id", subjectId!)
-      .order("sort_order");
-
-    if (lessonsData) setLessons(lessonsData);
-
-    // Check subscription
-    if (user) {
-      const { data: subs } = await supabase
+  const { data: hasSubscription = false } = useQuery({
+    queryKey: ["subscription-check", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
         .from("subscriptions")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .eq("status", "active")
         .limit(1);
-      setHasSubscription(!!subs && subs.length > 0);
+      return !!data && data.length > 0;
+    },
+    enabled: !!user,
+  });
 
-      // Load progress
-      if (lessonsData) {
-        const lessonIds = lessonsData.map((l) => l.id);
-        const { data: progressData } = await supabase
-          .from("user_progress")
-          .select("lesson_id, completed")
-          .eq("user_id", user.id)
-          .in("lesson_id", lessonIds);
-
-        if (progressData) {
-          const map: Record<string, boolean> = {};
-          progressData.forEach((p) => { if (p.completed) map[p.lesson_id] = true; });
-          setProgress(map);
-        }
-      }
-    }
-    setLoading(false);
-  };
+  const { data: progress = {} } = useQuery({
+    queryKey: ["user-progress", user?.id, subjectId],
+    queryFn: async () => {
+      const lessonIds = lessons.map((l) => l.id);
+      if (lessonIds.length === 0) return {};
+      const { data } = await supabase
+        .from("user_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user!.id)
+        .in("lesson_id", lessonIds);
+      const map: Record<string, boolean> = {};
+      data?.forEach((p) => { if (p.completed) map[p.lesson_id] = true; });
+      return map;
+    },
+    enabled: !!user && lessons.length > 0,
+  });
 
   const completedCount = Object.values(progress).filter(Boolean).length;
 
-  const handleLessonClick = (lesson: Lesson, e: React.MouseEvent) => {
+  const handleLessonClick = (lesson: typeof lessons[0], e: React.MouseEvent) => {
     if (!lesson.is_free && !hasSubscription) {
       e.preventDefault();
       navigate("/subscribe");
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
