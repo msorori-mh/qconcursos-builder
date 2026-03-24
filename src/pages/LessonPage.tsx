@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle, XCircle, FileText, Play, BookOpen } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, CheckCircle, XCircle, FileText, Play, BookOpen, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,19 +14,34 @@ const LessonPage = () => {
   const { gradeId, subjectId, lessonId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz">("video");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showResults, setShowResults] = useState(false);
 
-  const { data: lesson, isLoading: lessonLoading } = useQuery({
+  const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lessons").select("id, title, video_url, content_text, content_pdf_url").eq("id", lessonId!).single();
+      const { data, error } = await supabase.from("lessons").select("id, title, video_url, content_text, content_pdf_url, is_free").eq("id", lessonId!).single();
       if (error) throw error;
       return data;
     },
     enabled: !!lessonId,
+  });
+
+  const { data: hasSubscription = false } = useQuery({
+    queryKey: ["subscription-check", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .limit(1);
+      return !!data && data.length > 0;
+    },
+    enabled: !!user,
   });
 
   const { data: questions = [] } = useQuery({
@@ -90,12 +105,25 @@ const LessonPage = () => {
     );
   }
 
-  if (!lesson) {
+  if (!lesson || lessonError) {
+    // If RLS blocked access, show subscription prompt
+    const isBlocked = lessonError && !lesson;
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground">الدرس غير موجود</p>
+          {isBlocked ? (
+            <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+                <Lock className="h-8 w-8 text-accent" />
+              </div>
+              <h2 className="mb-2 text-xl font-bold text-card-foreground">محتوى مدفوع</h2>
+              <p className="mb-6 text-muted-foreground">هذا الدرس متاح فقط للمشتركين. اشترك الآن للوصول لجميع الدروس.</p>
+              <Button variant="hero" onClick={() => navigate("/subscribe")} className="w-full">اشترك الآن</Button>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">الدرس غير موجود</p>
+          )}
         </div>
       </div>
     );
