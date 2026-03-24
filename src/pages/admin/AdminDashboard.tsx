@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   GraduationCap, BookOpen, FileText, HelpCircle, CreditCard,
-  Users, TrendingUp, DollarSign, UserCheck, UserX, Clock,
+  Users, TrendingUp, DollarSign, UserCheck, Clock, Download,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
