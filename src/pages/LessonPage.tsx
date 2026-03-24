@@ -105,12 +105,25 @@ const LessonPage = () => {
     );
   }
 
-  if (!lesson) {
+  if (!lesson || lessonError) {
+    // If RLS blocked access, show subscription prompt
+    const isBlocked = lessonError && !lesson;
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground">الدرس غير موجود</p>
+          {isBlocked ? (
+            <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+                <Lock className="h-8 w-8 text-accent" />
+              </div>
+              <h2 className="mb-2 text-xl font-bold text-card-foreground">محتوى مدفوع</h2>
+              <p className="mb-6 text-muted-foreground">هذا الدرس متاح فقط للمشتركين. اشترك الآن للوصول لجميع الدروس.</p>
+              <Button variant="hero" onClick={() => navigate("/subscribe")} className="w-full">اشترك الآن</Button>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">الدرس غير موجود</p>
+          )}
         </div>
       </div>
     );
