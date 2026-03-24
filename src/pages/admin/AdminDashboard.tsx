@@ -96,6 +96,54 @@ const AdminDashboard = () => {
     { name: "مرفوضة", count: stats.rejectedPayments },
   ];
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const bom = "\uFEFF";
+    const csv = bom + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportStudents = async () => {
+    setExporting("students");
+    try {
+      const { data } = await supabase.from("profiles").select("full_name, phone, created_at");
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      downloadCSV("students.csv", ["الاسم", "الهاتف", "تاريخ التسجيل"], data.map((p: any) => [
+        p.full_name || "", p.phone || "", new Date(p.created_at).toLocaleDateString("ar-YE"),
+      ]));
+      toast({ title: "تم تصدير بيانات الطلاب" });
+    } finally { setExporting(null); }
+  };
+
+  const exportSubscriptions = async () => {
+    setExporting("subs");
+    try {
+      const { data } = await supabase.from("subscriptions").select("status, starts_at, expires_at, created_at, profiles!subscriptions_user_id_fkey(full_name)");
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      downloadCSV("subscriptions.csv", ["الطالب", "الحالة", "تاريخ البدء", "تاريخ الانتهاء"], data.map((s: any) => [
+        s.profiles?.full_name || "", s.status, s.starts_at ? new Date(s.starts_at).toLocaleDateString("ar-YE") : "", s.expires_at ? new Date(s.expires_at).toLocaleDateString("ar-YE") : "",
+      ]));
+      toast({ title: "تم تصدير بيانات الاشتراكات" });
+    } finally { setExporting(null); }
+  };
+
+  const exportPayments = async () => {
+    setExporting("payments");
+    try {
+      const { data } = await supabase.from("payment_requests").select("amount, status, created_at, profiles!payment_requests_user_id_fkey(full_name), payment_methods(name)").order("created_at", { ascending: false });
+      if (!data?.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+      downloadCSV("payments.csv", ["الطالب", "المبلغ", "الطريقة", "الحالة", "التاريخ"], data.map((p: any) => [
+        p.profiles?.full_name || "", String(p.amount), p.payment_methods?.name || "", p.status, new Date(p.created_at).toLocaleDateString("ar-YE"),
+      ]));
+      toast({ title: "تم تصدير بيانات المدفوعات" });
+    } finally { setExporting(null); }
+  };
+
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       pending: "bg-accent/15 text-accent",
@@ -120,7 +168,23 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-foreground">لوحة الإحصائيات</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-foreground">لوحة الإحصائيات</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportStudents}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "students" ? "جاري التصدير..." : "تصدير الطلاب"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportSubscriptions}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "subs" ? "جاري التصدير..." : "تصدير الاشتراكات"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportPayments}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting === "payments" ? "جاري التصدير..." : "تصدير المدفوعات"}
+          </Button>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
