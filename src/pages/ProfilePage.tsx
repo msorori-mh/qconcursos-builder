@@ -82,6 +82,35 @@ const ProfilePage = () => {
     toast({ title: "تم تحديث الملف الشخصي" });
   };
 
+  const changePassword = async () => {
+    if (!passwordForm.newPass || passwordForm.newPass.length < 6) {
+      toast({ title: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+      return;
+    }
+    if (passwordForm.newPass !== passwordForm.confirm) {
+      toast({ title: "كلمتا المرور غير متطابقتين", variant: "destructive" });
+      return;
+    }
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: passwordForm.newPass });
+    setSavingPassword(false);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "تم تغيير كلمة المرور بنجاح" });
+    setChangingPassword(false);
+    setPasswordForm({ current: "", newPass: "", confirm: "" });
+  };
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      return;
+    }
+    setProfile((p) => p ? { ...p, ...editForm } : p);
+    setEditing(false);
+    toast({ title: "تم تحديث الملف الشخصي" });
+  };
+
   const completedCount = progress.filter((p) => p.completed).length;
   const avgScore = progress.filter((p) => p.quiz_score != null).reduce((acc, p, _, arr) => acc + (p.quiz_score || 0) / arr.length, 0);
   const activeSub = subscriptions.find((s) => s.status === "active");
