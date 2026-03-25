@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
+  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock, Share2, Copy, Check, Users,
 } from "lucide-react";
 import StudentProgressDashboard from "@/components/StudentProgressDashboard";
 import CertificatesList from "@/components/CertificatesList";
@@ -18,6 +18,7 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   grade_id: string | null;
+  referral_code: string | null;
 }
 
 interface Subscription {
@@ -65,7 +66,7 @@ const ProfilePage = () => {
   const loadData = async () => {
     if (!user) return;
     const [profileRes, subsRes, progressRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id, referral_code").eq("user_id", user.id).maybeSingle(),
       supabase.from("subscriptions").select("id, status, starts_at, expires_at, grades(name)").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("user_progress").select("lesson_id, completed, quiz_score, completed_at, lessons(title, subjects(name, grades(name)))").eq("user_id", user.id).order("completed_at", { ascending: false }).limit(50),
     ]);
