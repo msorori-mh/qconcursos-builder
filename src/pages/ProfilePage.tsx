@@ -264,6 +264,35 @@ const ProfilePage = () => {
           )}
         </div>
 
+        {/* Referral Section */}
+        {profile?.referral_code && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-card-foreground">
+              <Users className="h-5 w-5 text-primary" /> دعوة الأصدقاء
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              شارك رمز الإحالة مع أصدقائك واحصلا معاً على خصم 10% عند اشتراكهم!
+            </p>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 rounded-lg border border-border bg-muted/50 px-4 py-3 text-center font-mono text-lg font-bold tracking-widest text-foreground" dir="ltr">
+                {profile.referral_code}
+              </div>
+              <Button variant="outline" size="icon" onClick={copyReferralCode} className="shrink-0">
+                {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={shareReferral} className="shrink-0">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {referralStats && (referralStats.total > 0) && (
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>إحالات ناجحة: <strong className="text-foreground">{referralStats.completed}</strong></span>
+                <span>إجمالي الإحالات: <strong className="text-foreground">{referralStats.total}</strong></span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
