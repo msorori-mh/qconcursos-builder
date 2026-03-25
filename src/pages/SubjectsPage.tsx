@@ -141,6 +141,11 @@ const SubjectsPage = () => {
         </div>
 
         <div className="mb-10">
+          {!isAdmin && (
+            <p className="mb-3 text-lg text-muted-foreground">
+              أهلاً <span className="font-bold text-foreground">{profile?.full_name || user?.user_metadata?.full_name || "طالب"}</span> 👋
+            </p>
+          )}
           <h1 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">{gradeName}</h1>
           <p className="text-muted-foreground">اختر المادة الدراسية للبدء</p>
           {hasActiveSubscription && !isAdmin && subscriptionSemester && !isAnnual && (
