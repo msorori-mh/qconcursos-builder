@@ -10,6 +10,7 @@ import {
   Wallet,
   Users,
   BarChart3,
+  MessageSquare,
   ArrowRight,
   Menu,
   X,
@@ -29,6 +30,7 @@ const sidebarLinks = [
   { href: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
   { href: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3 },
+  { href: "/admin/messages", label: "رسائل التواصل", icon: MessageSquare },
 ];
 
 const AdminLayout = () => {
