@@ -223,6 +223,23 @@ const SubjectsPage = () => {
           )}
         </div>
 
+        {!isAdmin && user && totalLessons > 0 && (
+          <div className="mb-8 grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-card">
+              <p className="text-2xl font-bold text-primary sm:text-3xl">{totalCompleted}</p>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">درس مكتمل</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-card">
+              <p className="text-2xl font-bold text-foreground sm:text-3xl">{totalLessons}</p>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">إجمالي الدروس</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-card">
+              <p className="text-2xl font-bold sm:text-3xl" style={{ color: avgProgress > 0 ? '#10b981' : undefined }}>{avgProgress}%</p>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">متوسط التقدم</p>
+            </div>
+          </div>
+        )}
+
         {filteredSubjects.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
             <p className="text-muted-foreground">لم تُضاف مواد لهذا الصف بعد</p>
