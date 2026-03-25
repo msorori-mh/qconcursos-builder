@@ -152,12 +152,34 @@ const ProfilePage = () => {
                   <div className="space-y-2">
                     <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} placeholder="الاسم الكامل" className="h-8" />
                     <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="رقم الهاتف" dir="ltr" className="h-8" />
+                    <select
+                      value={editForm.grade_id}
+                      onChange={(e) => setEditForm({ ...editForm, grade_id: e.target.value })}
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm h-8"
+                    >
+                      <option value="">اختر الصف</option>
+                      {grades.filter(g => g.category === "إعدادي").length > 0 && (
+                        <optgroup label="المرحلة الإعدادية">
+                          {grades.filter(g => g.category === "إعدادي").map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </optgroup>
+                      )}
+                      {grades.filter(g => g.category === "ثانوي").length > 0 && (
+                        <optgroup label="المرحلة الثانوية">
+                          {grades.filter(g => g.category === "ثانوي").map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </optgroup>
+                      )}
+                    </select>
                   </div>
                 ) : (
                   <>
                     <h1 className="text-xl font-bold text-card-foreground">{profile?.full_name || "طالب"}</h1>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
                     {profile?.phone && <p className="text-sm text-muted-foreground" dir="ltr">{profile.phone}</p>}
+                    {profile?.grade_id && (
+                      <p className="text-xs text-primary font-medium mt-1">
+                        {grades.find(g => g.id === profile.grade_id)?.name || ""}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
