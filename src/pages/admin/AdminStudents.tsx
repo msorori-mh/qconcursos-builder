@@ -113,12 +113,11 @@ const AdminStudents = () => {
     setProcessing(true);
     try {
       if (activate) {
-        if (student.subscription) {
-          // Update existing subscription
-          const now = new Date();
-          const expires = new Date(now);
-          expires.setMonth(expires.getMonth() + 6);
+        const now = new Date();
+        const expires = new Date(now);
+        expires.setMonth(expires.getMonth() + 6);
 
+        if (student.subscription) {
           const { error } = await supabase
             .from("subscriptions")
             .update({
@@ -129,11 +128,6 @@ const AdminStudents = () => {
             .eq("id", student.subscription.id);
           if (error) throw error;
         } else {
-          // Create new subscription
-          const now = new Date();
-          const expires = new Date(now);
-          expires.setMonth(expires.getMonth() + 6);
-
           const { error } = await supabase
             .from("subscriptions")
             .insert({
@@ -152,6 +146,26 @@ const AdminStudents = () => {
           message: "تم تفعيل اشتراكك بنجاح. يمكنك الآن الوصول لجميع الدروس المدفوعة.",
           type: "success",
         });
+
+        // Send activation email
+        try {
+          const { data: emailData } = await supabase.rpc("get_user_email", { _user_id: student.user_id });
+          if (emailData) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "subscription-activation",
+                recipientEmail: emailData,
+                idempotencyKey: `sub-activation-${student.user_id}-${Date.now()}`,
+                templateData: {
+                  name: student.full_name || undefined,
+                  expiresAt: expires.toLocaleDateString("ar-YE"),
+                },
+              },
+            });
+          }
+        } catch (e) {
+          console.error("Failed to send activation email:", e);
+        }
 
         toast({ title: "تم تفعيل الاشتراك بنجاح" });
       } else {

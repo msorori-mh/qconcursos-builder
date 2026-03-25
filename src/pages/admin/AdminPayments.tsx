@@ -105,6 +105,25 @@ const AdminPaymentsPage = () => {
           .eq("id", selectedRequest.subscription_id);
 
         if (subErr) throw subErr;
+
+        // Send activation email
+        try {
+          const { data: emailData } = await supabase.rpc("get_user_email", { _user_id: selectedRequest.user_id });
+          if (emailData) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "subscription-activation",
+                recipientEmail: emailData,
+                idempotencyKey: `sub-activation-payment-${selectedRequest.id}`,
+                templateData: {
+                  expiresAt: expires.toLocaleDateString("ar-YE"),
+                },
+              },
+            });
+          }
+        } catch (e) {
+          console.error("Failed to send activation email:", e);
+        }
       }
 
       toast({
