@@ -179,7 +179,9 @@ const SubscribePage = () => {
         <h1 className="mb-2 text-2xl font-bold text-foreground">الاشتراك في المنصة</h1>
         {selectedPlan && (
           <p className="mb-8 text-muted-foreground">
-            الخطة: <span className="font-bold text-primary">{selectedPlan.name}</span> — {selectedPlan.price.toLocaleString("ar-YE")} {selectedPlan.currency}
+            الخطة: <span className="font-bold text-primary">{selectedPlan.name}</span>
+            {selectedSemester && ` — الفصل ${selectedSemester === 1 ? "الأول" : "الثاني"}`}
+            {" — "}{selectedPlan.price.toLocaleString("ar-YE")} {selectedPlan.currency}
           </p>
         )}
 
