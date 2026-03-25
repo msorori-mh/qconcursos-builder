@@ -110,16 +110,12 @@
     @apply font-cairo font-bold;
   }
 
-  /* Ensure minimum touch targets */
-  button, a, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Exception for icon-only buttons with explicit sizes */
-  button[class*="h-5"], button[class*="h-6"], a[class*="h-3"] {
-    min-height: unset;
-    min-width: unset;
+  /* Mobile touch targets - only apply on touch devices */
+  @media (pointer: coarse) {
+    button:not([class*="h-3"]):not([class*="h-4"]):not([class*="h-5"]),
+    [role="button"] {
+      min-height: 44px;
+    }
   }
 
   /* Safe area padding for notched devices */
