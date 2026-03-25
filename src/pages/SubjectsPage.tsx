@@ -169,6 +169,10 @@ const SubjectsPage = () => {
   const sciOnly = hasBranches ? filteredSubjects.filter((s) => !s.slug.endsWith("-lit")) : [];
   const litOnly = hasBranches ? filteredSubjects.filter((s) => s.slug.endsWith("-lit")) : [];
 
+  if (shouldRedirect) {
+    return <Navigate to={`/grades/${profile!.grade_id}/subjects`} replace />;
+  }
+
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
