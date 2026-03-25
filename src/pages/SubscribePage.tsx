@@ -49,8 +49,25 @@ const SubscribePage = () => {
     if (user) {
       checkExistingRequest();
       loadPlans();
+      checkReferralDiscount();
     }
   }, [user]);
+
+  const checkReferralDiscount = async () => {
+    if (!user) return;
+    // Check if this user was referred and hasn't used the discount yet
+    const { data } = await supabase
+      .from("referrals")
+      .select("id, discount_percent, referred_reward_applied")
+      .eq("referred_id", user.id)
+      .eq("status", "pending")
+      .eq("referred_reward_applied", false)
+      .limit(1);
+    if (data && data.length > 0) {
+      setReferralDiscount(data[0].discount_percent);
+      setReferralId(data[0].id);
+    }
+  };
 
   const checkExistingRequest = async () => {
     const { data } = await supabase
