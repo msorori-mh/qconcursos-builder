@@ -18,6 +18,7 @@ const SubjectsPage = lazy(() => import("./pages/SubjectsPage.tsx"));
 const LessonsPage = lazy(() => import("./pages/LessonsPage.tsx"));
 const LessonPage = lazy(() => import("./pages/LessonPage.tsx"));
 const SubjectExamPage = lazy(() => import("./pages/SubjectExamPage.tsx"));
+const QuestionBankPage = lazy(() => import("./pages/QuestionBankPage.tsx"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage.tsx"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.tsx"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
