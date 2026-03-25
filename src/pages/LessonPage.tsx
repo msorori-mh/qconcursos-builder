@@ -193,7 +193,6 @@ const LessonPage = () => {
         {activeTab === "quiz" && (
           <LessonQuiz questions={questions} lessonId={lessonId!} userId={user?.id} />
         )}
-        )}
 
         <div className="mt-8 flex justify-between">
           <Link to={`/grades/${gradeId}/subjects/${subjectId}/lessons`}>
