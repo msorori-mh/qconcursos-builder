@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { Mail, Phone, MapPin, Send, CheckCircle } from "lucide-react";
+import SEOHead from "@/components/SEOHead";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -47,6 +48,11 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      <SEOHead
+        title="تواصل معنا"
+        description="تواصل مع فريق منصة مَسار التعليمية. نحن هنا لمساعدتك والإجابة على استفساراتك."
+        canonical="/contact"
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="text-center mb-10">

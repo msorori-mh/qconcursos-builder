@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { BookOpen, Target, Users, Award, Heart, Lightbulb } from "lucide-react";
+import SEOHead from "@/components/SEOHead";
 
 const team = [
   { name: "أ. محمد العمري", role: "المؤسس والمدير التنفيذي", icon: Lightbulb },
@@ -38,6 +39,11 @@ const stats = [
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="من نحن"
+        description="تعرف على منصة مَسار التعليمية، فريق العمل، رؤيتنا ورسالتنا في تقديم تعليم عالي الجودة لطلاب اليمن."
+        canonical="/about"
+      />
       <Navbar />
 
       {/* Hero */}

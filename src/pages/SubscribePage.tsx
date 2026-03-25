@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import SEOHead from "@/components/SEOHead";
 
 interface PaymentMethod {
   id: string;
@@ -153,6 +154,12 @@ const SubscribePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="الاشتراك"
+        description="اشترك في منصة مَسار التعليمية للوصول لجميع الدروس والاختبارات والمحتوى التعليمي."
+        canonical="/subscribe"
+        noIndex
+      />
       <Navbar />
       <div className="container mx-auto max-w-lg px-4 py-10">
         <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">

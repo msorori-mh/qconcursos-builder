@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, D
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
 const iconMap: Record<string, any> = {
   Calculator, Globe, FlaskConical, Atom, BookText, BookOpen, Dumbbell,
@@ -47,6 +48,15 @@ const SubjectsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={`مواد ${gradeName}`}
+        description={`تصفح المواد الدراسية المتاحة لـ${gradeName} في منصة مَسار التعليمية.`}
+        canonical={`/grades/${gradeId}/subjects`}
+        jsonLd={breadcrumbJsonLd([
+          { name: "الصفوف", url: "/grades" },
+          { name: gradeName, url: `/grades/${gradeId}/subjects` },
+        ])}
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-10">
         <div className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
