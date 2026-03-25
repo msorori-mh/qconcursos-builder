@@ -153,6 +153,26 @@ const AdminStudents = () => {
           type: "success",
         });
 
+        // Send activation email
+        try {
+          const { data: emailData } = await supabase.rpc("get_user_email", { _user_id: student.user_id });
+          if (emailData) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "subscription-activation",
+                recipientEmail: emailData,
+                idempotencyKey: `sub-activation-${student.user_id}-${Date.now()}`,
+                templateData: {
+                  name: student.full_name || undefined,
+                  expiresAt: expires.toLocaleDateString("ar-YE"),
+                },
+              },
+            });
+          }
+        } catch (e) {
+          console.error("Failed to send activation email:", e);
+        }
+
         toast({ title: "تم تفعيل الاشتراك بنجاح" });
       } else {
         if (student.subscription) {
