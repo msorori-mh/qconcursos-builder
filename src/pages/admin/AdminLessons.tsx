@@ -275,7 +275,6 @@ const AdminLessons = () => {
                 <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
               </div>
             </div>
-            </div>
             <Button variant="hero" className="w-full" onClick={save}>{editing ? "حفظ" : "إضافة"}</Button>
           </div>
         </DialogContent>
