@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Wallet, Upload, CheckCircle, Clock, Copy, Check } from "lucide-react";
+import { ArrowLeft, Building2, Wallet, Upload, CheckCircle, Clock, Copy, Check, CalendarDays, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,14 +17,23 @@ interface PaymentMethod {
   details: string | null;
 }
 
-const SUBSCRIPTION_AMOUNT = 5000;
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  duration_type: string;
+  duration_months: number;
+  price: number;
+  currency: string;
+}
 
 const SubscribePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<"method" | "details" | "upload" | "done">("method");
+  const [step, setStep] = useState<"plan" | "method" | "details" | "upload" | "done">("plan");
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [methodType, setMethodType] = useState<"bank" | "exchange" | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -36,6 +45,7 @@ const SubscribePage = () => {
   useEffect(() => {
     if (user) {
       checkExistingRequest();
+      loadPlans();
     }
   }, [user]);
 
@@ -47,9 +57,16 @@ const SubscribePage = () => {
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(1);
-    if (data && data.length > 0) {
-      setExistingRequest(data[0]);
-    }
+    if (data && data.length > 0) setExistingRequest(data[0]);
+  };
+
+  const loadPlans = async () => {
+    const { data } = await supabase
+      .from("subscription_plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order");
+    if (data) setPlans(data as any);
   };
 
   const loadMethods = async (type: "bank" | "exchange") => {
@@ -71,50 +88,41 @@ const SubscribePage = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setReceiptFile(e.target.files[0]);
-    }
+    if (e.target.files?.[0]) setReceiptFile(e.target.files[0]);
   };
 
   const handleSubmit = async () => {
-    if (!receiptFile || !selectedMethod || !user) return;
+    if (!receiptFile || !selectedMethod || !selectedPlan || !user) return;
     setUploading(true);
 
     try {
       const ext = receiptFile.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("receipts")
-        .upload(fileName, receiptFile);
-
+      const { error: uploadError } = await supabase.storage.from("receipts").upload(fileName, receiptFile);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("receipts")
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(fileName);
 
-      // Create subscription first
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
-        .insert({ user_id: user.id, status: "pending" })
+        .insert({ user_id: user.id, status: "pending", plan_id: selectedPlan.id })
         .select()
         .single();
-
       if (subError) throw subError;
 
-      // Create payment request
       const { error: payError } = await supabase
         .from("payment_requests")
         .insert({
           user_id: user.id,
           subscription_id: sub.id,
           payment_method_id: selectedMethod.id,
-          amount: SUBSCRIPTION_AMOUNT,
+          plan_id: selectedPlan.id,
+          amount: selectedPlan.price,
+          currency: selectedPlan.currency,
           receipt_url: urlData.publicUrl,
           status: "pending",
         });
-
       if (payError) throw payError;
 
       setStep("done");
@@ -126,6 +134,10 @@ const SubscribePage = () => {
     }
   };
 
+  const stepLabels = ["اختيار الخطة", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"];
+  const stepKeys = ["plan", "method", "details", "upload"];
+  const currentIdx = stepKeys.indexOf(step === "done" ? "upload" : step);
+
   if (existingRequest && step !== "done") {
     return (
       <div className="min-h-screen bg-background">
@@ -135,13 +147,11 @@ const SubscribePage = () => {
             <Clock className="mx-auto mb-4 h-16 w-16 text-accent" />
             <h2 className="mb-2 text-xl font-bold text-card-foreground">طلب دفع قيد المراجعة</h2>
             <p className="mb-4 text-muted-foreground">
-              لديك طلب دفع مقدم بتاريخ{" "}
-              {new Date(existingRequest.created_at).toLocaleDateString("ar-YE")}
-              <br />
-              سيتم مراجعته والرد عليك قريباً
+              لديك طلب دفع مقدم بتاريخ {new Date(existingRequest.created_at).toLocaleDateString("ar-YE")}
+              <br />سيتم مراجعته والرد عليك قريباً
             </p>
             <p className="text-sm text-muted-foreground">
-              المبلغ: <span className="font-bold text-foreground">{existingRequest.amount} ر.ي</span>
+              المبلغ: <span className="font-bold text-foreground">{existingRequest.amount} {existingRequest.currency || "ر.ي"}</span>
             </p>
             <Link to="/grades">
               <Button variant="hero" className="mt-6">العودة للصفوف</Button>
@@ -154,50 +164,74 @@ const SubscribePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead
-        title="الاشتراك"
-        description="اشترك في منصة تنوير التعليمية للوصول لجميع الدروس والاختبارات والمحتوى التعليمي."
-        canonical="/subscribe"
-        noIndex
-      />
+      <SEOHead title="الاشتراك" description="اشترك في منصة تنوير التعليمية للوصول لجميع الدروس والاختبارات." canonical="/subscribe" noIndex />
       <Navbar />
       <div className="container mx-auto max-w-lg px-4 py-10">
         <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          رجوع
+          <ArrowLeft className="h-4 w-4" /> رجوع
         </button>
 
         <h1 className="mb-2 text-2xl font-bold text-foreground">الاشتراك في المنصة</h1>
-        <p className="mb-8 text-muted-foreground">
-          رسوم الاشتراك: <span className="font-bold text-primary">{SUBSCRIPTION_AMOUNT.toLocaleString("ar-YE")} ر.ي</span>
-        </p>
+        {selectedPlan && (
+          <p className="mb-8 text-muted-foreground">
+            الخطة: <span className="font-bold text-primary">{selectedPlan.name}</span> — {selectedPlan.price.toLocaleString("ar-YE")} {selectedPlan.currency}
+          </p>
+        )}
 
         {/* Step indicator */}
-        <div className="mb-8 flex items-center justify-center gap-2">
-          {["طريقة الدفع", "تفاصيل الحساب", "رفع السند"].map((label, i) => {
-            const steps = ["method", "details", "upload"];
-            const currentIdx = steps.indexOf(step === "done" ? "upload" : step);
-            return (
-              <div key={label} className="flex items-center gap-2">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                  i <= currentIdx ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}>
-                  {i + 1}
-                </div>
-                <span className={`text-xs ${i <= currentIdx ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
-                {i < 2 && <div className={`h-px w-6 ${i < currentIdx ? "bg-primary" : "bg-border"}`} />}
-              </div>
-            );
-          })}
+        <div className="mb-8 flex items-center justify-center gap-1.5">
+          {stepLabels.map((label, i) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                i <= currentIdx ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}>{i + 1}</div>
+              <span className={`text-[11px] hidden sm:inline ${i <= currentIdx ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
+              {i < stepLabels.length - 1 && <div className={`h-px w-4 ${i < currentIdx ? "bg-primary" : "bg-border"}`} />}
+            </div>
+          ))}
         </div>
+
+        {/* Step 0: Choose plan */}
+        {step === "plan" && (
+          <div className="space-y-4">
+            {plans.length === 0 ? (
+              <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
+                <p className="text-muted-foreground">لا توجد خطط اشتراك متاحة حالياً</p>
+              </div>
+            ) : (
+              plans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => { setSelectedPlan(plan); setStep("method"); }}
+                  className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${plan.duration_type === "annual" ? "bg-primary/10" : "bg-accent/15"}`}>
+                      {plan.duration_type === "annual"
+                        ? <Calendar className="h-7 w-7 text-primary" />
+                        : <CalendarDays className="h-7 w-7 text-accent" />}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-card-foreground">{plan.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {plan.duration_type === "semester" ? "الوصول لمحتوى فصل دراسي واحد" : "الوصول لمحتوى الفصلين الدراسيين"}
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+                      <p className="text-xs text-muted-foreground">{plan.currency}</p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Step 1: Choose method type */}
         {step === "method" && (
           <div className="space-y-4">
-            <button
-              onClick={() => loadMethods("bank")}
-              className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
-            >
+            <button onClick={() => loadMethods("bank")} className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
                   <Building2 className="h-7 w-7 text-primary" />
@@ -208,11 +242,7 @@ const SubscribePage = () => {
                 </div>
               </div>
             </button>
-
-            <button
-              onClick={() => loadMethods("exchange")}
-              className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
-            >
+            <button onClick={() => loadMethods("exchange")} className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent/15">
                   <Wallet className="h-7 w-7 text-accent" />
@@ -223,6 +253,7 @@ const SubscribePage = () => {
                 </div>
               </div>
             </button>
+            <Button variant="outline" className="w-full" onClick={() => { setStep("plan"); setSelectedPlan(null); }}>رجوع</Button>
           </div>
         )}
 
@@ -253,10 +284,7 @@ const SubscribePage = () => {
                       <span>رقم الحساب:</span>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground">{m.account_number}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); copyToClipboard(m.account_number!, m.id); }}
-                          className="text-muted-foreground hover:text-primary"
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); copyToClipboard(m.account_number!, m.id); }} className="text-muted-foreground hover:text-primary">
                           {copiedId === m.id ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                         </button>
                       </div>
@@ -266,9 +294,7 @@ const SubscribePage = () => {
                 </div>
               </button>
             ))}
-            <Button variant="outline" className="w-full" onClick={() => { setStep("method"); setMethodType(null); }}>
-              رجوع
-            </Button>
+            <Button variant="outline" className="w-full" onClick={() => { setStep("method"); setMethodType(null); }}>رجوع</Button>
           </div>
         )}
 
@@ -278,42 +304,24 @@ const SubscribePage = () => {
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <h3 className="mb-1 font-bold text-card-foreground">تحويل إلى: {selectedMethod?.name}</h3>
               <p className="text-sm text-muted-foreground">رقم الحساب: {selectedMethod?.account_number}</p>
-              <p className="mt-2 text-sm font-bold text-primary">المبلغ: {SUBSCRIPTION_AMOUNT.toLocaleString("ar-YE")} ر.ي</p>
+              <p className="mt-2 text-sm font-bold text-primary">المبلغ: {selectedPlan?.price.toLocaleString("ar-YE")} {selectedPlan?.currency}</p>
             </div>
 
             <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
               <Upload className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
               <p className="mb-3 font-semibold text-card-foreground">ارفع سند التحويل</p>
               <p className="mb-4 text-sm text-muted-foreground">صورة واضحة لإيصال التحويل (JPG, PNG, PDF)</p>
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-                id="receipt-upload"
-              />
+              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" id="receipt-upload" />
               <label htmlFor="receipt-upload">
-                <Button variant="outline" asChild className="cursor-pointer">
-                  <span>اختر ملف</span>
-                </Button>
+                <Button variant="outline" asChild className="cursor-pointer"><span>اختر ملف</span></Button>
               </label>
-              {receiptFile && (
-                <p className="mt-3 text-sm text-success font-medium">✓ {receiptFile.name}</p>
-              )}
+              {receiptFile && <p className="mt-3 text-sm text-success font-medium">✓ {receiptFile.name}</p>}
             </div>
 
-            <Button
-              variant="hero"
-              className="w-full"
-              disabled={!receiptFile || uploading}
-              onClick={handleSubmit}
-            >
+            <Button variant="hero" className="w-full" disabled={!receiptFile || uploading} onClick={handleSubmit}>
               {uploading ? "جاري الإرسال..." : "إرسال طلب الاشتراك"}
             </Button>
-
-            <Button variant="outline" className="w-full" onClick={() => setStep("details")}>
-              رجوع
-            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setStep("details")}>رجوع</Button>
           </div>
         )}
 
@@ -322,12 +330,8 @@ const SubscribePage = () => {
           <div className="rounded-2xl border border-success/30 bg-card p-8 text-center shadow-card">
             <CheckCircle className="mx-auto mb-4 h-16 w-16 text-success" />
             <h2 className="mb-2 text-xl font-bold text-card-foreground">تم إرسال طلبك بنجاح!</h2>
-            <p className="mb-6 text-muted-foreground">
-              سيتم مراجعة سند التحويل وتفعيل اشتراكك خلال 24 ساعة
-            </p>
-            <Link to="/grades">
-              <Button variant="hero">العودة للصفوف</Button>
-            </Link>
+            <p className="mb-6 text-muted-foreground">سيتم مراجعة سند التحويل وتفعيل اشتراكك خلال 24 ساعة</p>
+            <Link to="/grades"><Button variant="hero">العودة للصفوف</Button></Link>
           </div>
         )}
       </div>

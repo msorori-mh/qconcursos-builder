@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Menu,
   X,
+  Tags,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ const sidebarLinks = [
   { href: "/admin/students", label: "الطلاب", icon: Users },
   { href: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
   { href: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
+  { href: "/admin/subscription-plans", label: "خطط الاشتراك", icon: Tags },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3 },
   { href: "/admin/messages", label: "رسائل التواصل", icon: MessageSquare },
 ];
