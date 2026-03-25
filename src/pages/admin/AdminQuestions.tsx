@@ -28,6 +28,12 @@ interface Subject { id: string; name: string; }
 
 const PAGE_SIZE = 20;
 
+const QUESTION_TYPES = [
+  { value: "lesson", label: "سؤال درس" },
+  { value: "exam", label: "اختبار شامل" },
+  { value: "bank", label: "بنك أسئلة" },
+];
+
 const emptyForm = {
   question_text: "", options: ["", "", "", ""], correct_index: 0,
   explanation: "", lesson_id: "", subject_id: "", question_type: "lesson", sort_order: 0,
@@ -45,9 +51,10 @@ const AdminQuestions = () => {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   useEffect(() => { loadRefs(); }, []);
-  useEffect(() => { loadQuestions(); }, [page, searchTerm]);
+  useEffect(() => { loadQuestions(); }, [page, searchTerm, filterType]);
 
   const loadRefs = async () => {
     const [{ data: lData }, { data: sData }] = await Promise.all([
@@ -70,6 +77,7 @@ const AdminQuestions = () => {
       .range(from, to);
 
     if (searchTerm.trim()) query = query.ilike("question_text", `%${searchTerm.trim()}%`);
+    if (filterType) query = query.eq("question_type", filterType);
 
     const { data, count } = await query;
 
@@ -156,8 +164,8 @@ const AdminQuestions = () => {
         </Button>
       </div>
 
-      <div className="mb-4">
-        <div className="relative">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchTerm}
@@ -166,6 +174,11 @@ const AdminQuestions = () => {
             className="pr-9"
           />
         </div>
+        <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <option value="">كل الأنواع</option>
+          {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
       </div>
 
       {loading ? (
@@ -183,9 +196,10 @@ const AdminQuestions = () => {
               <div key={q.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-card-foreground line-clamp-2">{q.question_text}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                   <p className="text-sm text-muted-foreground mt-1">
                     {q.lessons?.title || q.subjects?.name || "عام"}
                     {" • "}{(q.options as string[]).length} خيارات
+                    {" • "}{QUESTION_TYPES.find(t => t.value === q.question_type)?.label || "سؤال درس"}
                   </p>
                 </div>
                 <div className="flex gap-2 mr-3">
@@ -228,15 +242,24 @@ const AdminQuestions = () => {
               <textarea value={form.explanation} onChange={(e) => setForm({ ...form, explanation: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={2} />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">نوع السؤال</label>
+              <select value={form.question_type} onChange={(e) => setForm({ ...form, question_type: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium">الدرس</label>
-                <select value={form.lesson_id} onChange={(e) => setForm({ ...form, lesson_id: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">بدون درس</option>
-                  {lessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
-                </select>
-              </div>
+              {form.question_type === "lesson" && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium">الدرس</label>
+                  <select value={form.lesson_id} onChange={(e) => setForm({ ...form, lesson_id: e.target.value })}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">بدون درس</option>
+                    {lessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-sm font-medium">المادة</label>
                 <select value={form.subject_id} onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
