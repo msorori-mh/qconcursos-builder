@@ -71,22 +71,22 @@ const Navbar = () => {
         </div>
 
         {/* Mobile toggle */}
-        <button onClick={() => setIsOpen(!isOpen)} className="text-foreground md:hidden">
+        <button onClick={() => setIsOpen(!isOpen)} className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground active:bg-muted transition-colors md:hidden">
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="border-t border-border bg-background px-4 py-4 md:hidden">
-          <div className="flex flex-col gap-3">
+        <div className="border-t border-border bg-background px-4 py-4 md:hidden safe-bottom animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
+          <div className="flex flex-col gap-1">
             {links.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`text-sm font-medium ${
-                  location.pathname === link.href ? "text-primary" : "text-muted-foreground"
+                className={`flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors active:bg-muted ${
+                  location.pathname === link.href ? "text-primary bg-primary/5" : "text-muted-foreground"
                 }`}
               >
                 {link.label}
@@ -94,23 +94,23 @@ const Navbar = () => {
             ))}
             {user ? (
               <>
-                <div className="flex items-center justify-between">
-                  <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                    <User className="h-4 w-4" /> ملفي الشخصي
-                  </Link>
+                <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground active:bg-muted">
+                  <User className="h-4 w-4" /> ملفي الشخصي
+                </Link>
+                <div className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2">
                     <NotificationBell />
                     <ThemeToggle />
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
+                <Button variant="outline" size="sm" className="mt-2 w-full gap-1.5 py-5" onClick={() => { handleSignOut(); setIsOpen(false); }}>
                   <LogOut className="h-3.5 w-3.5" />
                   تسجيل خروج
                 </Button>
               </>
             ) : (
               <Link to="/auth" onClick={() => setIsOpen(false)}>
-                <Button variant="hero" size="sm" className="mt-2 w-full">ابدأ التعلم</Button>
+                <Button variant="hero" size="sm" className="mt-2 w-full py-5">ابدأ التعلم</Button>
               </Link>
             )}
           </div>

@@ -95,12 +95,32 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground font-cairo antialiased;
+    overscroll-behavior-y: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-cairo font-bold;
+  }
+
+  /* Mobile touch targets - only apply on touch devices */
+  @media (pointer: coarse) {
+    button:not([class*="h-3"]):not([class*="h-4"]):not([class*="h-5"]),
+    [role="button"] {
+      min-height: 44px;
+    }
+  }
+
+  /* Safe area padding for notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 

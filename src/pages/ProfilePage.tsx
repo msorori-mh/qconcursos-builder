@@ -194,16 +194,16 @@ const ProfilePage = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { icon: CheckCircle2, label: "دروس مكتملة", value: completedCount },
             { icon: Award, label: "معدل الاختبارات", value: avgScore > 0 ? `${Math.round(avgScore)}%` : "—" },
             { icon: CreditCard, label: "الاشتراك", value: activeSub ? "فعّال" : "غير مشترك" },
           ].map((stat, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-4 text-center shadow-card">
-              <stat.icon className="mx-auto mb-2 h-5 w-5 text-primary" />
-              <p className="text-lg font-bold text-card-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <div key={i} className="rounded-xl border border-border bg-card p-3 sm:p-4 text-center shadow-card">
+              <stat.icon className="mx-auto mb-1.5 sm:mb-2 h-5 w-5 text-primary" />
+              <p className="text-base sm:text-lg font-bold text-card-foreground">{stat.value}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>

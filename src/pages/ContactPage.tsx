@@ -54,7 +54,7 @@ const ContactPage = () => {
         canonical="/contact"
       />
       <Navbar />
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">تواصل معنا</h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -62,9 +62,9 @@ const ContactPage = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid gap-6 md:grid-cols-3 md:gap-8">
           {/* Contact Info */}
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-1 md:space-y-6 md:gap-0">
             <Card className="border-primary/20">
               <CardContent className="p-6 flex items-start gap-4">
                 <div className="rounded-full bg-primary/10 p-3 shrink-0">
@@ -139,7 +139,7 @@ const ContactPage = () => {
                       <Label htmlFor="message">الرسالة</Label>
                       <Textarea id="message" name="message" value={formData.message} onChange={handleChange} placeholder="اكتب رسالتك هنا..." rows={5} maxLength={2000} required />
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full sm:w-auto gap-2">
+                    <Button type="submit" disabled={loading} variant="hero" className="w-full gap-2 py-5 sm:w-auto sm:py-2">
                       <Send className="h-4 w-4" />
                       {loading ? "جارٍ الإرسال..." : "إرسال الرسالة"}
                     </Button>
