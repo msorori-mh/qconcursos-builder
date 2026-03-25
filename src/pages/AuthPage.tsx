@@ -229,6 +229,17 @@ const AuthPage = () => {
                   )}
                 </select>
               </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">رمز الإحالة <span className="text-muted-foreground font-normal">(اختياري)</span></label>
+                <Input
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  placeholder="أدخل رمز الإحالة إن وُجد"
+                  dir="ltr"
+                  maxLength={8}
+                  className="font-mono tracking-wider"
+                />
+              </div>
             </>
           )}
 
