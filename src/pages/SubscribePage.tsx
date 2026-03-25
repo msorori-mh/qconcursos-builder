@@ -214,11 +214,26 @@ const SubscribePage = () => {
         </button>
 
         <h1 className="mb-2 text-2xl font-bold text-foreground">الاشتراك في المنصة</h1>
+        {referralDiscount > 0 && (
+          <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+            🎉 لديك خصم إحالة <strong>{referralDiscount}%</strong> على اشتراكك!
+          </div>
+        )}
         {selectedPlan && (
           <p className="mb-8 text-muted-foreground">
             الخطة: <span className="font-bold text-primary">{selectedPlan.name}</span>
             {selectedSemester && ` — الفصل ${selectedSemester === 1 ? "الأول" : "الثاني"}`}
-            {" — "}{selectedPlan.price.toLocaleString("ar-YE")} {selectedPlan.currency}
+            {" — "}
+            {discountedPrice ? (
+              <>
+                <span className="line-through text-muted-foreground">{selectedPlan.price.toLocaleString("ar-YE")}</span>
+                {" "}
+                <span className="font-bold text-green-600">{discountedPrice.toLocaleString("ar-YE")}</span>
+              </>
+            ) : (
+              <>{selectedPlan.price.toLocaleString("ar-YE")}</>
+            )}
+            {" "}{selectedPlan.currency}
           </p>
         )}
 
