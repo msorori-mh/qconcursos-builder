@@ -100,17 +100,8 @@ const SubjectsPage = () => {
   const subscriptionSemester = activeSub?.semester;
   const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
 
-  // Filter subjects based on subscription semester
-  const filterBySemester = (subs: SubjectItem[]) => {
-    if (isAdmin || !hasActiveSubscription) return subs;
-    if (isAnnual) return subs; // annual sees all
-    if (subscriptionSemester) {
-      return subs.filter(s => !s.semester || s.semester === subscriptionSemester);
-    }
-    return subs;
-  };
-
-  const filteredSubjects = filterBySemester(subjects);
+  // All subjects are shown — semester filtering happens at lesson level
+  const filteredSubjects = subjects;
 
   const gradeName = grade?.name || "الصف الدراسي";
   const isThirdSec = grade?.slug === "grade-12";

@@ -11,12 +11,12 @@ const LessonsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: lessons = [], isLoading } = useQuery({
+  const { data: allLessons = [], isLoading } = useQuery({
     queryKey: ["lessons", subjectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lessons")
-        .select("id, title, duration, is_free, slug")
+        .select("id, title, duration, is_free, slug, semester")
         .eq("subject_id", subjectId!)
         .order("sort_order");
       if (error) throw error;
@@ -25,18 +25,38 @@ const LessonsPage = () => {
     enabled: !!subjectId,
   });
 
-  const { data: hasSubscription = false } = useQuery({
-    queryKey: ["subscription-check", user?.id],
+  // Get subscription to determine semester access
+  const { data: activeSub } = useQuery({
+    queryKey: ["active-subscription", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("subscriptions")
-        .select("id")
+        .select("id, semester, subscription_plans(duration_type)")
         .eq("user_id", user!.id)
         .eq("status", "active")
+        .order("created_at", { ascending: false })
         .limit(1);
-      return !!data && data.length > 0;
+      return data?.[0] || null;
     },
     enabled: !!user,
+  });
+
+  const subscriptionSemester = activeSub?.semester;
+  const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
+
+  const { data: hasSubscription = false } = useQuery({
+    queryKey: ["subscription-check", user?.id],
+    queryFn: async () => {
+      return !!activeSub;
+    },
+    enabled: !!user,
+  });
+
+  // Filter lessons by semester if user has semester subscription
+  const lessons = allLessons.filter(l => {
+    if (!activeSub || isAnnual || !subscriptionSemester) return true; // show all
+    if (!l.semester) return true; // lesson with no semester set is always shown
+    return l.semester === subscriptionSemester;
   });
 
   const { data: progress = {} } = useQuery({

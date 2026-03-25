@@ -21,6 +21,7 @@ interface Lesson {
   content_text: string | null;
   content_pdf_url: string | null;
   sort_order: number;
+  semester: number | null;
   subjects?: { name: string; grades?: { name: string } };
 }
 
@@ -31,6 +32,7 @@ const PAGE_SIZE = 20;
 const emptyForm = {
   title: "", slug: "", subject_id: "", duration: "", is_free: true,
   video_url: "", content_text: "", content_pdf_url: "", sort_order: 0,
+  semester: "" as string | number,
 };
 
 const AdminLessons = () => {
