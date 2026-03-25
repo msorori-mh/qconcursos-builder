@@ -17,6 +17,7 @@ interface Subject {
   color: string | null;
   sort_order: number;
   lessons_count: number | null;
+  semester: number | null;
   grades?: { name: string };
 }
 
@@ -29,7 +30,7 @@ const AdminSubjects = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Subject | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", grade_id: "", icon: "BookOpen", color: "#3b82f6", sort_order: 0, lessons_count: 0 });
+  const [form, setForm] = useState({ name: "", slug: "", grade_id: "", icon: "BookOpen", color: "#3b82f6", sort_order: 0, lessons_count: 0, semester: null as number | null });
 
   useEffect(() => { load(); }, []);
 
@@ -45,13 +46,13 @@ const AdminSubjects = () => {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", grade_id: grades[0]?.id || "", icon: "BookOpen", color: "#3b82f6", sort_order: 0, lessons_count: 0 });
+    setForm({ name: "", slug: "", grade_id: grades[0]?.id || "", icon: "BookOpen", color: "#3b82f6", sort_order: 0, lessons_count: 0, semester: null });
     setDialogOpen(true);
   };
 
   const openEdit = (s: Subject) => {
     setEditing(s);
-    setForm({ name: s.name, slug: s.slug, grade_id: s.grade_id, icon: s.icon || "BookOpen", color: s.color || "#3b82f6", sort_order: s.sort_order, lessons_count: s.lessons_count || 0 });
+    setForm({ name: s.name, slug: s.slug, grade_id: s.grade_id, icon: s.icon || "BookOpen", color: s.color || "#3b82f6", sort_order: s.sort_order, lessons_count: s.lessons_count || 0, semester: s.semester });
     setDialogOpen(true);
   };
 
@@ -108,7 +109,10 @@ const AdminSubjects = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-card-foreground">{s.name}</h3>
-                  <p className="text-sm text-muted-foreground">{(s as any).grades?.name} • {s.lessons_count || 0} درس</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(s as any).grades?.name} • {s.lessons_count || 0} درس
+                    {s.semester ? ` • الفصل ${s.semester}` : ""}
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -141,6 +145,18 @@ const AdminSubjects = () => {
             <div>
               <label className="mb-1 block text-sm font-medium">الرابط (slug)</label>
               <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="math" dir="ltr" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">الفصل الدراسي</label>
+              <select
+                value={form.semester ?? ""}
+                onChange={(e) => setForm({ ...form, semester: e.target.value ? +e.target.value : null })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">غير محدد</option>
+                <option value="1">الفصل الأول</option>
+                <option value="2">الفصل الثاني</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
