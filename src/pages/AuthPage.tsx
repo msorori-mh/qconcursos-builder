@@ -52,8 +52,27 @@ const AuthPage = () => {
   }, [grades, gradeId]);
 
   const saveGradeToProfile = async (userId: string) => {
-    if (gradeId) {
-      await supabase.from("profiles").update({ grade_id: gradeId }).eq("user_id", userId);
+    const updates: any = {};
+    if (gradeId) updates.grade_id = gradeId;
+    if (referralCode.trim()) updates.referred_by = referralCode.trim().toUpperCase();
+    if (Object.keys(updates).length > 0) {
+      await supabase.from("profiles").update(updates).eq("user_id", userId);
+    }
+    // Create referral record if code is valid
+    if (referralCode.trim()) {
+      const code = referralCode.trim().toUpperCase();
+      const { data: referrer } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", code)
+        .maybeSingle();
+      if (referrer && referrer.user_id !== userId) {
+        await supabase.from("referrals").insert({
+          referrer_id: referrer.user_id,
+          referred_id: userId,
+          status: "pending",
+        });
+      }
     }
   };
 
