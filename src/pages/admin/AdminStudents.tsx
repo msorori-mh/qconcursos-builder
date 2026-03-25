@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, UserCheck, UserX, Eye, ChevronDown } from "lucide-react";
+import { Search, UserCheck, UserX, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import PaginationControls from "@/components/admin/PaginationControls";
 
 interface Student {
@@ -35,6 +39,7 @@ const AdminStudents = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [duration, setDuration] = useState<string>("6");
 
   useEffect(() => {
     setPage(1);
@@ -113,9 +118,10 @@ const AdminStudents = () => {
     setProcessing(true);
     try {
       if (activate) {
+        const months = parseInt(duration);
         const now = new Date();
         const expires = new Date(now);
-        expires.setMonth(expires.getMonth() + 6);
+        expires.setMonth(expires.getMonth() + months);
 
         if (student.subscription) {
           const { error } = await supabase
@@ -362,28 +368,46 @@ const AdminStudents = () => {
                 )}
               </div>
 
-              <div className="flex gap-3">
-                {isActive(selectedStudent) ? (
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    disabled={processing}
-                    onClick={() => toggleSubscription(selectedStudent, false)}
-                  >
-                    <UserX className="h-4 w-4 ml-1" />
-                    تعطيل الاشتراك
-                  </Button>
-                ) : (
-                  <Button
-                    variant="hero"
-                    className="flex-1"
-                    disabled={processing}
-                    onClick={() => toggleSubscription(selectedStudent, true)}
-                  >
-                    <UserCheck className="h-4 w-4 ml-1" />
-                    تفعيل الاشتراك (6 أشهر)
-                  </Button>
+              <div className="space-y-3">
+                {!isActive(selectedStudent) && (
+                  <div className="space-y-2">
+                    <Label>مدة الاشتراك</Label>
+                    <Select value={duration} onValueChange={setDuration}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">شهر واحد</SelectItem>
+                        <SelectItem value="3">3 أشهر</SelectItem>
+                        <SelectItem value="6">6 أشهر</SelectItem>
+                        <SelectItem value="12">سنة كاملة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
+                <div className="flex gap-3">
+                  {isActive(selectedStudent) ? (
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      disabled={processing}
+                      onClick={() => toggleSubscription(selectedStudent, false)}
+                    >
+                      <UserX className="h-4 w-4 ml-1" />
+                      تعطيل الاشتراك
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="hero"
+                      className="flex-1"
+                      disabled={processing}
+                      onClick={() => toggleSubscription(selectedStudent, true)}
+                    >
+                      <UserCheck className="h-4 w-4 ml-1" />
+                      تفعيل الاشتراك
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
