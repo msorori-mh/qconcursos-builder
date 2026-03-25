@@ -35,6 +35,7 @@ const AdminQuestions = lazy(() => import("./pages/admin/AdminQuestions.tsx"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments.tsx"));
 const AdminPaymentMethods = lazy(() => import("./pages/admin/AdminPaymentMethods.tsx"));
 const AdminStudents = lazy(() => import("./pages/admin/AdminStudents.tsx"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="students" element={<AdminStudents />} />
                 <Route path="payments" element={<AdminPayments />} />
                 <Route path="payment-methods" element={<AdminPaymentMethods />} />
+                <Route path="reports" element={<AdminReports />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
