@@ -258,14 +258,25 @@ const AuthPage = () => {
           ) : (
             <div>
               <label className="mb-1.5 block text-sm font-medium text-card-foreground">رقم الهاتف</label>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+967XXXXXXXXX"
-                required
-                dir="ltr"
-              />
+              <div className="flex gap-2" dir="ltr">
+                <div className="flex items-center rounded-md border border-input bg-muted px-3 text-sm font-medium text-muted-foreground select-none shrink-0">
+                  +967
+                </div>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 9);
+                    setPhone(val);
+                  }}
+                  placeholder="7XXXXXXXX"
+                  required
+                  dir="ltr"
+                  maxLength={9}
+                  inputMode="numeric"
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground text-right">أدخل 9 أرقام بدون كود الدولة</p>
             </div>
           )}
 
