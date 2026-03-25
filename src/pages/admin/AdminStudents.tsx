@@ -39,6 +39,7 @@ const AdminStudents = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [duration, setDuration] = useState<string>("6");
 
   useEffect(() => {
     setPage(1);
