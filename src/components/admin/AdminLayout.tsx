@@ -8,6 +8,7 @@ import {
   HelpCircle,
   CreditCard,
   Wallet,
+  Users,
   ArrowRight,
   Menu,
   X,
@@ -23,6 +24,7 @@ const sidebarLinks = [
   { href: "/admin/subjects", label: "المواد", icon: BookOpen },
   { href: "/admin/lessons", label: "الدروس", icon: FileText },
   { href: "/admin/questions", label: "الأسئلة", icon: HelpCircle },
+  { href: "/admin/students", label: "الطلاب", icon: Users },
   { href: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
   { href: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
 ];
