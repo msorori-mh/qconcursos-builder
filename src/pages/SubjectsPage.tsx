@@ -155,6 +155,14 @@ const SubjectsPage = () => {
 
   const progressMap = progressData || {};
 
+  // Compute summary stats
+  const totalCompleted = Object.values(progressMap).reduce((sum, p) => sum + p.completed, 0);
+  const totalLessons = Object.values(progressMap).reduce((sum, p) => sum + p.total, 0);
+  const subjectsWithLessons = Object.values(progressMap).filter((p) => p.total > 0);
+  const avgProgress = subjectsWithLessons.length > 0
+    ? Math.round(subjectsWithLessons.reduce((sum, p) => sum + (p.completed / p.total) * 100, 0) / subjectsWithLessons.length)
+    : 0;
+
   const hasActiveSubscription = !!activeSub;
   const subscriptionSemester = activeSub?.semester;
   const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
