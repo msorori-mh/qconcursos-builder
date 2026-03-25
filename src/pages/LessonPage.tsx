@@ -132,6 +132,13 @@ const LessonPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={lesson.title}
+        description={`درس ${lesson.title} - شرح فيديو واختبارات تفاعلية في منصة مَسار التعليمية.`}
+        canonical={`/grades/${gradeId}/subjects/${subjectId}/lessons/${lessonId}`}
+        type="course"
+        jsonLd={courseJsonLd(lesson.title, `درس ${lesson.title}`, `/grades/${gradeId}/subjects/${subjectId}/lessons/${lessonId}`)}
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

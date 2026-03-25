@@ -78,6 +78,11 @@ const LessonsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="الدروس"
+        description="تصفح الدروس التعليمية المتاحة مع فيديوهات وشروحات واختبارات تفاعلية."
+        canonical={`/grades/${gradeId}/subjects/${subjectId}/lessons`}
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-10">
         <div className="mb-8 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

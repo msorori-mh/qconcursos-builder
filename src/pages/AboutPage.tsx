@@ -39,6 +39,11 @@ const stats = [
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="من نحن"
+        description="تعرف على منصة مَسار التعليمية، فريق العمل، رؤيتنا ورسالتنا في تقديم تعليم عالي الجودة لطلاب اليمن."
+        canonical="/about"
+      />
       <Navbar />
 
       {/* Hero */}
