@@ -556,6 +556,7 @@ export type Database = {
           grade_id: string | null
           id: string
           plan_id: string | null
+          semester: number | null
           starts_at: string | null
           status: string
           updated_at: string
@@ -567,6 +568,7 @@ export type Database = {
           grade_id?: string | null
           id?: string
           plan_id?: string | null
+          semester?: number | null
           starts_at?: string | null
           status?: string
           updated_at?: string
@@ -578,6 +580,7 @@ export type Database = {
           grade_id?: string | null
           id?: string
           plan_id?: string | null
+          semester?: number | null
           starts_at?: string | null
           status?: string
           updated_at?: string
