@@ -243,12 +243,12 @@ const SubjectsPage = () => {
                   <BookText className="h-5 w-5 text-accent" />
                   الفرع الأدبي
                 </h2>
-                <SubjectGrid subjects={litOnly} gradeId={gradeId!} />
+                <SubjectGrid subjects={litOnly} gradeId={gradeId!} progressMap={progressMap} />
               </div>
             )}
           </>
         ) : (
-          <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} />
+          <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} progressMap={progressMap} />
         )}
 
         {isThirdSec && (
