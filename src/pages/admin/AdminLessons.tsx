@@ -21,6 +21,7 @@ interface Lesson {
   content_text: string | null;
   content_pdf_url: string | null;
   sort_order: number;
+  semester: number | null;
   subjects?: { name: string; grades?: { name: string } };
 }
 
@@ -31,6 +32,7 @@ const PAGE_SIZE = 20;
 const emptyForm = {
   title: "", slug: "", subject_id: "", duration: "", is_free: true,
   video_url: "", content_text: "", content_pdf_url: "", sort_order: 0,
+  semester: "" as string | number,
 };
 
 const AdminLessons = () => {
@@ -94,6 +96,7 @@ const AdminLessons = () => {
       duration: l.duration || "", is_free: l.is_free ?? true,
       video_url: l.video_url || "", content_text: l.content_text || "",
       content_pdf_url: l.content_pdf_url || "", sort_order: l.sort_order,
+      semester: l.semester ?? "",
     });
     setDialogOpen(true);
   };
@@ -108,6 +111,7 @@ const AdminLessons = () => {
       duration: form.duration || null, is_free: form.is_free,
       video_url: form.video_url || null, content_text: form.content_text || null,
       content_pdf_url: form.content_pdf_url || null, sort_order: form.sort_order,
+      semester: form.semester === "" ? null : Number(form.semester),
     };
     if (editing) {
       const { error } = await supabase.from("lessons").update(payload).eq("id", editing.id);
@@ -256,9 +260,20 @@ const AdminLessons = () => {
               <textarea value={form.content_text} onChange={(e) => setForm({ ...form, content_text: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[100px]" />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">الترتيب</label>
-              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">الفصل الدراسي</label>
+                <select value={form.semester} onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">كلا الفصلين</option>
+                  <option value="1">الفصل الأول</option>
+                  <option value="2">الفصل الثاني</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">الترتيب</label>
+                <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
+              </div>
             </div>
             <Button variant="hero" className="w-full" onClick={save}>{editing ? "حفظ" : "إضافة"}</Button>
           </div>

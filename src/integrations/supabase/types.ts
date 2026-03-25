@@ -195,6 +195,7 @@ export type Database = {
           duration: string | null
           id: string
           is_free: boolean | null
+          semester: number | null
           slug: string
           sort_order: number
           subject_id: string
@@ -209,6 +210,7 @@ export type Database = {
           duration?: string | null
           id?: string
           is_free?: boolean | null
+          semester?: number | null
           slug: string
           sort_order?: number
           subject_id: string
@@ -223,6 +225,7 @@ export type Database = {
           duration?: string | null
           id?: string
           is_free?: boolean | null
+          semester?: number | null
           slug?: string
           sort_order?: number
           subject_id?: string
