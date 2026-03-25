@@ -260,9 +260,21 @@ const AdminLessons = () => {
               <textarea value={form.content_text} onChange={(e) => setForm({ ...form, content_text: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[100px]" />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">الترتيب</label>
-              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">الفصل الدراسي</label>
+                <select value={form.semester} onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">كلا الفصلين</option>
+                  <option value="1">الفصل الأول</option>
+                  <option value="2">الفصل الثاني</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">الترتيب</label>
+                <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
+              </div>
+            </div>
             </div>
             <Button variant="hero" className="w-full" onClick={save}>{editing ? "حفظ" : "إضافة"}</Button>
           </div>
