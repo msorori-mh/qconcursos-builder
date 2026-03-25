@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
 } from "lucide-react";
+import StudentProgressDashboard from "@/components/StudentProgressDashboard";
 
 interface Profile {
   full_name: string | null;
@@ -237,6 +238,9 @@ const ProfilePage = () => {
             </div>
           )}
         </div>
+
+        {/* Student Progress Dashboard */}
+        <StudentProgressDashboard />
 
         {/* Progress */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
