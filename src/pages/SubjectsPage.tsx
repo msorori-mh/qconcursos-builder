@@ -50,7 +50,7 @@ const SubjectsPage = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`مواد ${gradeName}`}
-        description={`تصفح المواد الدراسية المتاحة لـ${gradeName} في منصة مَسار التعليمية.`}
+        description={`تصفح المواد الدراسية المتاحة لـ${gradeName} في منصة تنوير التعليمية.`}
         canonical={`/grades/${gradeId}/subjects`}
         jsonLd={breadcrumbJsonLd([
           { name: "الصفوف", url: "/grades" },

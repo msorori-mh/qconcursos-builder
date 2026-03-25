@@ -50,7 +50,7 @@ const ContactPage = () => {
     <div className="min-h-screen bg-background" dir="rtl">
       <SEOHead
         title="تواصل معنا"
-        description="تواصل مع فريق منصة مَسار التعليمية. نحن هنا لمساعدتك والإجابة على استفساراتك."
+        description="تواصل مع فريق منصة تنوير التعليمية. نحن هنا لمساعدتك والإجابة على استفساراتك."
         canonical="/contact"
       />
       <Navbar />

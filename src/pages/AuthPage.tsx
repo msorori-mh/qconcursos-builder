@@ -86,7 +86,7 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <SEOHead
         title={mode === "login" ? "تسجيل الدخول" : "إنشاء حساب"}
-        description="سجل دخولك أو أنشئ حساباً جديداً في منصة مَسار التعليمية للوصول إلى الدروس والاختبارات."
+        description="سجل دخولك أو أنشئ حساباً جديداً في منصة تنوير التعليمية للوصول إلى الدروس والاختبارات."
         canonical="/auth"
         noIndex
       />
@@ -96,7 +96,7 @@ const AuthPage = () => {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-hero-gradient">
             <BookOpen className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">مَسار</h1>
+          <h1 className="text-2xl font-bold text-foreground">تنوير</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "login" ? "سجّل دخولك للمتابعة" : "أنشئ حسابك الجديد"}
           </p>

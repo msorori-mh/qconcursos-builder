@@ -133,7 +133,7 @@ const CertificatesList = () => {
                   
                   <h3 className="text-base sm:text-xl font-bold text-accent">شهادة إتمام</h3>
                   
-                  <p className="text-xs sm:text-sm text-muted-foreground">تشهد منصة مَسار التعليمية بأن</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">تشهد منصة تنوير التعليمية بأن</p>
                   
                   <p className="text-lg sm:text-2xl font-extrabold text-card-foreground border-b-2 border-accent/30 pb-1 px-4">
                     {profileName}
@@ -151,7 +151,7 @@ const CertificatesList = () => {
                   
                   <div className="mt-2 sm:mt-4 text-[10px] sm:text-xs text-muted-foreground">
                     <p>تاريخ الإصدار: {new Date(selected.issued_at).toLocaleDateString("ar-YE")}</p>
-                    <p className="mt-1 font-medium text-accent">منصة مَسار التعليمية</p>
+                    <p className="mt-1 font-medium text-accent">منصة تنوير التعليمية</p>
                   </div>
                 </div>
               </div>
