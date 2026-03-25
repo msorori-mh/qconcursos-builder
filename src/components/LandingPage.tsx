@@ -63,7 +63,7 @@ const HeroSection = () => (
           </Button>
         </Link>
         <Link to="/about">
-          <Button variant="outline" size="lg" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-base px-8 py-6">
+          <Button variant="accent" size="lg" className="gap-2 text-base px-8 py-6">
             تعرف على المنصة
             <ArrowLeft className="h-4 w-4" />
           </Button>
