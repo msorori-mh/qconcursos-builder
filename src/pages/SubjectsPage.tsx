@@ -1,11 +1,12 @@
 import { Link, useParams, Navigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, Lock } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, Lock, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const iconMap: Record<string, any> = {
   Calculator, Globe, FlaskConical, Atom, BookText, BookOpen, Dumbbell,
@@ -21,11 +22,20 @@ interface SubjectItem {
   semester: number | null;
 }
 
-const SubjectGrid = ({ subjects, gradeId }: { subjects: SubjectItem[]; gradeId: string }) => (
+interface SubjectProgress {
+  completed: number;
+  total: number;
+}
+
+const SubjectGrid = ({ subjects, gradeId, progressMap }: { subjects: SubjectItem[]; gradeId: string; progressMap: Record<string, SubjectProgress> }) => (
   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {subjects.map((subject, i) => {
       const IconComp = iconMap[subject.icon || "BookOpen"] || BookOpen;
       const color = subject.color || "#3b82f6";
+      const progress = progressMap[subject.id];
+      const total = progress?.total || subject.lessons_count || 0;
+      const completed = progress?.completed || 0;
+      const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
       return (
         <Link
           key={subject.id}
@@ -38,12 +48,25 @@ const SubjectGrid = ({ subjects, gradeId }: { subjects: SubjectItem[]; gradeId: 
               <div className="flex h-14 w-14 items-center justify-center rounded-xl" style={{ backgroundColor: color + "18" }}>
                 <IconComp className="h-7 w-7" style={{ color }} />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-card-foreground">{subject.name}</h3>
-                <p className="text-sm text-muted-foreground">{subject.lessons_count || 0} درس</p>
+                <p className="text-sm text-muted-foreground">{total} درس</p>
               </div>
-              <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1" />
+              {pct === 100 ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+              ) : (
+                <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1 shrink-0" />
+              )}
             </div>
+            {total > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                  <span>{completed} / {total} درس مكتمل</span>
+                  <span className="font-medium" style={{ color: pct > 0 ? color : undefined }}>{pct}%</span>
+                </div>
+                <Progress value={pct} className="h-1.5" />
+              </div>
+            )}
           </div>
         </Link>
       );
@@ -55,10 +78,7 @@ const SubjectsPage = () => {
   const { gradeId } = useParams();
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
 
-  // Restrict non-admin students to their own grade
-  if (!authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId) {
-    return <Navigate to={`/grades/${profile.grade_id}/subjects`} replace />;
-  }
+  const shouldRedirect = !authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId;
 
   const { data: grade } = useQuery({
     queryKey: ["grade", gradeId],
@@ -96,6 +116,45 @@ const SubjectsPage = () => {
     enabled: !!user && !isAdmin,
   });
 
+  // Fetch progress: completed lessons per subject
+  const subjectIds = subjects.map((s) => s.id);
+  const { data: progressData } = useQuery({
+    queryKey: ["subject-progress", user?.id, subjectIds],
+    queryFn: async () => {
+      // Get all lessons for these subjects
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id, subject_id")
+        .in("subject_id", subjectIds);
+      if (!lessons?.length) return {} as Record<string, SubjectProgress>;
+
+      // Get completed progress
+      const lessonIds = lessons.map((l) => l.id);
+      const { data: progress } = await supabase
+        .from("user_progress")
+        .select("lesson_id")
+        .eq("user_id", user!.id)
+        .eq("completed", true)
+        .in("lesson_id", lessonIds);
+
+      const completedSet = new Set((progress || []).map((p) => p.lesson_id));
+
+      // Build map
+      const map: Record<string, SubjectProgress> = {};
+      for (const s of subjects) {
+        const subLessons = lessons.filter((l) => l.subject_id === s.id);
+        map[s.id] = {
+          total: subLessons.length,
+          completed: subLessons.filter((l) => completedSet.has(l.id)).length,
+        };
+      }
+      return map;
+    },
+    enabled: !!user && !isAdmin && subjectIds.length > 0,
+  });
+
+  const progressMap = progressData || {};
+
   const hasActiveSubscription = !!activeSub;
   const subscriptionSemester = activeSub?.semester;
   const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
@@ -109,6 +168,10 @@ const SubjectsPage = () => {
 
   const sciOnly = hasBranches ? filteredSubjects.filter((s) => !s.slug.endsWith("-lit")) : [];
   const litOnly = hasBranches ? filteredSubjects.filter((s) => s.slug.endsWith("-lit")) : [];
+
+  if (shouldRedirect) {
+    return <Navigate to={`/grades/${profile!.grade_id}/subjects`} replace />;
+  }
 
   if (isLoading || authLoading) {
     return (
@@ -172,7 +235,7 @@ const SubjectsPage = () => {
                   <Atom className="h-5 w-5 text-primary" />
                   الفرع العلمي
                 </h2>
-                <SubjectGrid subjects={sciOnly} gradeId={gradeId!} />
+                <SubjectGrid subjects={sciOnly} gradeId={gradeId!} progressMap={progressMap} />
               </div>
             )}
             {litOnly.length > 0 && (
@@ -181,12 +244,12 @@ const SubjectsPage = () => {
                   <BookText className="h-5 w-5 text-accent" />
                   الفرع الأدبي
                 </h2>
-                <SubjectGrid subjects={litOnly} gradeId={gradeId!} />
+                <SubjectGrid subjects={litOnly} gradeId={gradeId!} progressMap={progressMap} />
               </div>
             )}
           </>
         ) : (
-          <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} />
+          <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} progressMap={progressMap} />
         )}
 
         {isThirdSec && (
