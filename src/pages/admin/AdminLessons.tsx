@@ -74,9 +74,16 @@ const AdminLessons = () => {
     setLoading(false);
   };
 
-  const openNew = () => {
+  const openNew = async () => {
     setEditing(null);
-    setForm({ ...emptyForm, subject_id: filterSubject || subjects[0]?.id || "" });
+    const selectedSubject = filterSubject || subjects[0]?.id || "";
+    // Check if this subject has any lessons; if not, default is_free to true
+    let defaultFree = true;
+    if (selectedSubject) {
+      const { count } = await supabase.from("lessons").select("id", { count: "exact", head: true }).eq("subject_id", selectedSubject);
+      defaultFree = (count || 0) === 0;
+    }
+    setForm({ ...emptyForm, subject_id: selectedSubject, is_free: defaultFree });
     setDialogOpen(true);
   };
 
