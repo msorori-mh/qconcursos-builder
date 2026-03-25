@@ -42,6 +42,8 @@ const SubscribePage = () => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [existingRequest, setExistingRequest] = useState<any>(null);
+  const [referralDiscount, setReferralDiscount] = useState<number>(0);
+  const [referralId, setReferralId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
