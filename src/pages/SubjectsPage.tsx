@@ -1,10 +1,11 @@
 import { Link, useParams, Navigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, Lock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
+import { Button } from "@/components/ui/button";
 
 const iconMap: Record<string, any> = {
   Calculator, Globe, FlaskConical, Atom, BookText, BookOpen, Dumbbell,
@@ -17,6 +18,7 @@ interface SubjectItem {
   icon: string | null;
   color: string | null;
   lessons_count: number | null;
+  semester: number | null;
 }
 
 const SubjectGrid = ({ subjects, gradeId }: { subjects: SubjectItem[]; gradeId: string }) => (
