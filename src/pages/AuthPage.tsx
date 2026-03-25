@@ -23,7 +23,7 @@ const AuthPage = () => {
   const [otp, setOtp] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const { data: grades = [] } = useQuery({
     queryKey: ["grades-auth"],
@@ -74,7 +74,10 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
-        if (data.user) await saveGradeToProfile(data.user.id);
+        if (data.user) {
+          await saveGradeToProfile(data.user.id);
+          await refreshProfile();
+        }
         toast({ title: "تم إنشاء الحساب", description: "تحقق من بريدك الإلكتروني لتأكيد الحساب" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -108,7 +111,10 @@ const AuthPage = () => {
       } else {
         const { data, error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
         if (error) throw error;
-        if (mode === "signup" && data.user) await saveGradeToProfile(data.user.id);
+        if (mode === "signup" && data.user) {
+          await saveGradeToProfile(data.user.id);
+          await refreshProfile();
+        }
       }
     } catch (error: any) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
