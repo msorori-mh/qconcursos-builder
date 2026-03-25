@@ -23,6 +23,7 @@ const Navbar = () => {
       { href: "/about", label: "من نحن" },
       { href: "/contact", label: "تواصل معنا" },
     ] : []),
+    ...(isAdmin ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
   ];
 
   const handleSignOut = async () => {
