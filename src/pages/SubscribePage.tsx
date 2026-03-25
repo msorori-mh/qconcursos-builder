@@ -31,9 +31,10 @@ const SubscribePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<"plan" | "method" | "details" | "upload" | "done">("plan");
+  const [step, setStep] = useState<"plan" | "semester" | "method" | "details" | "upload" | "done">("plan");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
   const [methodType, setMethodType] = useState<"bank" | "exchange" | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -106,7 +107,7 @@ const SubscribePage = () => {
 
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
-        .insert({ user_id: user.id, status: "pending", plan_id: selectedPlan.id })
+        .insert({ user_id: user.id, status: "pending", plan_id: selectedPlan.id, semester: selectedSemester })
         .select()
         .single();
       if (subError) throw subError;
@@ -134,8 +135,12 @@ const SubscribePage = () => {
     }
   };
 
-  const stepLabels = ["اختيار الخطة", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"];
-  const stepKeys = ["plan", "method", "details", "upload"];
+  const stepLabels = selectedPlan?.duration_type === "semester"
+    ? ["اختيار الخطة", "اختيار الفصل", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"]
+    : ["اختيار الخطة", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"];
+  const stepKeys = selectedPlan?.duration_type === "semester"
+    ? ["plan", "semester", "method", "details", "upload"]
+    : ["plan", "method", "details", "upload"];
   const currentIdx = stepKeys.indexOf(step === "done" ? "upload" : step);
 
   if (existingRequest && step !== "done") {
@@ -202,7 +207,15 @@ const SubscribePage = () => {
               plans.map((plan) => (
                 <button
                   key={plan.id}
-                  onClick={() => { setSelectedPlan(plan); setStep("method"); }}
+                  onClick={() => {
+                    setSelectedPlan(plan);
+                    setSelectedSemester(null);
+                    if (plan.duration_type === "semester") {
+                      setStep("semester");
+                    } else {
+                      setStep("method");
+                    }
+                  }}
                   className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
                 >
                   <div className="flex items-center gap-4">
