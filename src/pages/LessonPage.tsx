@@ -1,25 +1,21 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle, XCircle, FileText, Play, BookOpen, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Play, BookOpen, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import SEOHead, { courseJsonLd } from "@/components/SEOHead";
 import LazyMedia from "@/components/LazyMedia";
+import LessonQuiz from "@/components/LessonQuiz";
 import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 
 const LessonPage = () => {
   const { gradeId, subjectId, lessonId } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz">("video");
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showResults, setShowResults] = useState(false);
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -58,36 +54,6 @@ const LessonPage = () => {
     enabled: !!lessonId,
   });
 
-  const handleAnswer = (questionId: string, optionIndex: number) => {
-    if (showResults) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
-  };
-
-  const handleSubmit = async () => {
-    setShowResults(true);
-    if (user && lessonId) {
-      const score = questions.filter((q: any) => answers[q.id] === q.correct_index).length;
-      const { data: existing } = await supabase
-        .from("user_progress")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("lesson_id", lessonId)
-        .limit(1);
-
-      const payload = { completed: true, completed_at: new Date().toISOString(), quiz_score: score };
-
-      if (existing && existing.length > 0) {
-        await supabase.from("user_progress").update(payload).eq("id", existing[0].id);
-      } else {
-        await supabase.from("user_progress").insert({ user_id: user.id, lesson_id: lessonId, ...payload });
-      }
-      // Invalidate progress cache
-      queryClient.invalidateQueries({ queryKey: ["user-progress"] });
-      toast({ title: "تم حفظ تقدمك ✓" });
-    }
-  };
-
-  const correctCount = questions.filter((q: any) => answers[q.id] === q.correct_index).length;
 
   const tabs = [
     { id: "video" as const, label: "الفيديو", icon: Play },
