@@ -111,6 +111,11 @@ const AuthPage = () => {
   };
 
   const handlePhoneAuth = async () => {
+    if (phone.length !== 9) {
+      toast({ title: "يرجى إدخال رقم هاتف مكون من 9 أرقام", variant: "destructive" });
+      return;
+    }
+    const fullPhone = `+967${phone}`;
     setLoading(true);
     try {
       if (!otpSent) {
@@ -120,16 +125,16 @@ const AuthPage = () => {
             setLoading(false);
             return;
           }
-          const { error } = await supabase.auth.signUp({ phone, password, options: { data: { full_name: fullName } } });
+          const { error } = await supabase.auth.signUp({ phone: fullPhone, password, options: { data: { full_name: fullName } } });
           if (error) throw error;
         } else {
-          const { error } = await supabase.auth.signInWithOtp({ phone });
+          const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
           if (error) throw error;
         }
         setOtpSent(true);
         toast({ title: "تم إرسال رمز التحقق", description: "أدخل الرمز المرسل إلى هاتفك" });
       } else {
-        const { data, error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
+        const { data, error } = await supabase.auth.verifyOtp({ phone: fullPhone, token: otp, type: "sms" });
         if (error) throw error;
         if (mode === "signup" && data.user) {
           await saveGradeToProfile(data.user.id);
