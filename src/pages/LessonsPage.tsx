@@ -58,8 +58,13 @@ const LessonsPage = () => {
 
   const completedCount = Object.values(progress).filter(Boolean).length;
 
-  const handleLessonClick = (lesson: typeof lessons[0], e: React.MouseEvent) => {
-    if (!lesson.is_free && !hasSubscription) {
+  // First lesson (lowest sort_order, i.e. index 0) is always accessible
+  const isLessonAccessible = (lesson: typeof lessons[0], index: number) => {
+    return index === 0 || lesson.is_free || hasSubscription;
+  };
+
+  const handleLessonClick = (lesson: typeof lessons[0], index: number, e: React.MouseEvent) => {
+    if (!isLessonAccessible(lesson, index)) {
       e.preventDefault();
       navigate("/subscribe");
     }
@@ -117,9 +122,9 @@ const LessonsPage = () => {
 
         {!hasSubscription && (
           <Link to="/subscribe">
-            <div className="mb-6 rounded-2xl border border-accent/30 bg-accent/5 p-4 text-center transition-all hover:shadow-card">
+            <div className="mb-6 rounded-2xl border border-accent/30 bg-accent/5 p-5 text-center transition-all hover:shadow-card">
               <p className="text-sm font-semibold text-accent">
-                🔓 اشترك الآن للوصول لجميع الدروس المدفوعة
+                🎓 جرّب الدرس الأول مجاناً! اشترك الآن للوصول لجميع الدروس
               </p>
             </div>
           </Link>
@@ -128,27 +133,28 @@ const LessonsPage = () => {
         <div className="space-y-3">
           {lessons.map((lesson, i) => {
             const completed = progress[lesson.id];
-            const isFree = lesson.is_free;
-            const locked = !isFree && !hasSubscription;
+            const accessible = isLessonAccessible(lesson, i);
+            const isFirstFree = i === 0 && !hasSubscription;
+            const locked = !accessible;
 
             return (
               <Link
                 key={lesson.id}
                 to={`/grades/${gradeId}/subjects/${subjectId}/lessons/${lesson.id}`}
-                onClick={(e) => handleLessonClick(lesson, e)}
+                onClick={(e) => handleLessonClick(lesson, i, e)}
                 className="block opacity-0 animate-fade-in-up"
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
                 <div className={`group rounded-2xl border bg-card p-5 transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5 ${
-                  completed ? "border-success/30" : "border-border"
+                  completed ? "border-success/30" : isFirstFree ? "border-primary/40" : "border-border"
                 }`}>
                   <div className="flex items-center gap-4">
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      completed ? "bg-success/10" : isFree ? "bg-primary/10" : "bg-muted"
+                      completed ? "bg-success/10" : accessible ? "bg-primary/10" : "bg-muted"
                     }`}>
                       {completed ? (
                         <CheckCircle className="h-5 w-5 text-success" />
-                      ) : isFree ? (
+                      ) : accessible ? (
                         <Play className="h-5 w-5 text-primary" />
                       ) : (
                         <Lock className="h-5 w-5 text-muted-foreground" />
@@ -175,6 +181,9 @@ const LessonsPage = () => {
                         </span>
                       </div>
                     </div>
+                    {isFirstFree && (
+                      <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">تجريبي</span>
+                    )}
                     {locked && (
                       <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold text-accent">مدفوع</span>
                     )}
