@@ -34,7 +34,7 @@ const ContactPage = () => {
     setLoading(true);
     try {
       const id = crypto.randomUUID();
-      const { error } = await supabase.from("contact_submissions").insert({ ...formData, id });
+      const { error } = await supabase.from("contact_submissions" as any).insert({ ...formData, id } as any);
       if (error) throw error;
       setSubmitted(true);
       toast({ title: "تم الإرسال", description: "شكراً لتواصلك معنا، سنرد عليك قريباً" });
