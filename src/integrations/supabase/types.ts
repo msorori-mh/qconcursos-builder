@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          id: string
+          issued_at: string
+          subject_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          issued_at?: string
+          subject_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          issued_at?: string
+          subject_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string
