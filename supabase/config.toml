@@ -2,3 +2,6 @@ project_id = "japawsxstnaynpdowufa"
 
 [functions.process-email-queue]
 verify_jwt = true
+
+[functions.check-subscription-expiry]
+verify_jwt = true
