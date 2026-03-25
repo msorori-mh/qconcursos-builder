@@ -42,13 +42,32 @@ const SubscribePage = () => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [existingRequest, setExistingRequest] = useState<any>(null);
+  const [referralDiscount, setReferralDiscount] = useState<number>(0);
+  const [referralId, setReferralId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       checkExistingRequest();
       loadPlans();
+      checkReferralDiscount();
     }
   }, [user]);
+
+  const checkReferralDiscount = async () => {
+    if (!user) return;
+    // Check if this user was referred and hasn't used the discount yet
+    const { data } = await supabase
+      .from("referrals")
+      .select("id, discount_percent, referred_reward_applied")
+      .eq("referred_id", user.id)
+      .eq("status", "pending")
+      .eq("referred_reward_applied", false)
+      .limit(1);
+    if (data && data.length > 0) {
+      setReferralDiscount(data[0].discount_percent);
+      setReferralId(data[0].id);
+    }
+  };
 
   const checkExistingRequest = async () => {
     const { data } = await supabase
@@ -105,6 +124,11 @@ const SubscribePage = () => {
 
       const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(fileName);
 
+      // Calculate discounted amount
+      const discountedAmount = referralDiscount > 0
+        ? Math.round(selectedPlan.price * (1 - referralDiscount / 100))
+        : selectedPlan.price;
+
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
         .insert({ user_id: user.id, status: "pending", plan_id: selectedPlan.id, semester: selectedSemester })
@@ -119,12 +143,21 @@ const SubscribePage = () => {
           subscription_id: sub.id,
           payment_method_id: selectedMethod.id,
           plan_id: selectedPlan.id,
-          amount: selectedPlan.price,
+          amount: discountedAmount,
           currency: selectedPlan.currency,
           receipt_url: urlData.publicUrl,
           status: "pending",
+          admin_notes: referralDiscount > 0 ? `خصم إحالة ${referralDiscount}% — المبلغ الأصلي: ${selectedPlan.price}` : null,
         });
       if (payError) throw payError;
+
+      // Mark referral as completed if discount was applied
+      if (referralId && referralDiscount > 0) {
+        await supabase
+          .from("referrals")
+          .update({ status: "completed", referred_reward_applied: true, completed_at: new Date().toISOString() })
+          .eq("id", referralId);
+      }
 
       setStep("done");
       toast({ title: "تم إرسال طلبك بنجاح", description: "سيتم مراجعة سند التحويل خلال 24 ساعة" });
@@ -134,6 +167,10 @@ const SubscribePage = () => {
       setUploading(false);
     }
   };
+
+  const discountedPrice = selectedPlan && referralDiscount > 0
+    ? Math.round(selectedPlan.price * (1 - referralDiscount / 100))
+    : null;
 
   const stepLabels = selectedPlan?.duration_type === "semester"
     ? ["اختيار الخطة", "اختيار الفصل", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"]
@@ -177,11 +214,26 @@ const SubscribePage = () => {
         </button>
 
         <h1 className="mb-2 text-2xl font-bold text-foreground">الاشتراك في المنصة</h1>
+        {referralDiscount > 0 && (
+          <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+            🎉 لديك خصم إحالة <strong>{referralDiscount}%</strong> على اشتراكك!
+          </div>
+        )}
         {selectedPlan && (
           <p className="mb-8 text-muted-foreground">
             الخطة: <span className="font-bold text-primary">{selectedPlan.name}</span>
             {selectedSemester && ` — الفصل ${selectedSemester === 1 ? "الأول" : "الثاني"}`}
-            {" — "}{selectedPlan.price.toLocaleString("ar-YE")} {selectedPlan.currency}
+            {" — "}
+            {discountedPrice ? (
+              <>
+                <span className="line-through text-muted-foreground">{selectedPlan.price.toLocaleString("ar-YE")}</span>
+                {" "}
+                <span className="font-bold text-green-600">{discountedPrice.toLocaleString("ar-YE")}</span>
+              </>
+            ) : (
+              <>{selectedPlan.price.toLocaleString("ar-YE")}</>
+            )}
+            {" "}{selectedPlan.currency}
           </p>
         )}
 
@@ -233,7 +285,14 @@ const SubscribePage = () => {
                       </p>
                     </div>
                     <div className="text-left">
-                      <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+                      {referralDiscount > 0 ? (
+                        <>
+                          <p className="text-xs line-through text-muted-foreground">{plan.price.toLocaleString("ar-YE")}</p>
+                          <p className="text-lg font-bold text-green-600">{Math.round(plan.price * (1 - referralDiscount / 100)).toLocaleString("ar-YE")}</p>
+                        </>
+                      ) : (
+                        <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">{plan.currency}</p>
                     </div>
                   </div>

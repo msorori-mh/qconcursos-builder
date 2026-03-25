@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
+  User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock, Share2, Copy, Check, Users,
 } from "lucide-react";
 import StudentProgressDashboard from "@/components/StudentProgressDashboard";
 import CertificatesList from "@/components/CertificatesList";
@@ -18,6 +18,7 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   grade_id: string | null;
+  referral_code: string | null;
 }
 
 interface Subscription {
@@ -65,7 +66,7 @@ const ProfilePage = () => {
   const loadData = async () => {
     if (!user) return;
     const [profileRes, subsRes, progressRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id, referral_code").eq("user_id", user.id).maybeSingle(),
       supabase.from("subscriptions").select("id, status, starts_at, expires_at, grades(name)").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("user_progress").select("lesson_id, completed, quiz_score, completed_at, lessons(title, subjects(name, grades(name)))").eq("user_id", user.id).order("completed_at", { ascending: false }).limit(50),
     ]);
@@ -118,6 +119,43 @@ const ProfilePage = () => {
   const completedCount = progress.filter((p) => p.completed).length;
   const avgScore = progress.filter((p) => p.quiz_score != null).reduce((acc, p, _, arr) => acc + (p.quiz_score || 0) / arr.length, 0);
   const activeSub = subscriptions.find((s) => s.status === "active");
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  // Fetch referral stats
+  const { data: referralStats } = useQuery({
+    queryKey: ["referral-stats", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("referrals")
+        .select("id, status")
+        .eq("referrer_id", user!.id);
+      const total = data?.length || 0;
+      const completed = data?.filter((r: any) => r.status === "completed").length || 0;
+      return { total, completed };
+    },
+    enabled: !!user,
+  });
+
+  const copyReferralCode = () => {
+    if (profile?.referral_code) {
+      navigator.clipboard.writeText(profile.referral_code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+      toast({ title: "تم نسخ رمز الإحالة" });
+    }
+  };
+
+  const shareReferral = () => {
+    if (profile?.referral_code && navigator.share) {
+      navigator.share({
+        title: "انضم لمنصة تنوير التعليمية",
+        text: `سجّل في منصة تنوير باستخدام رمز الإحالة: ${profile.referral_code} واحصل على خصم على اشتراكك!`,
+        url: window.location.origin + "/auth",
+      }).catch(() => {});
+    } else {
+      copyReferralCode();
+    }
+  };
 
   const statusLabels: Record<string, { label: string; className: string }> = {
     active: { label: "فعّال", className: "bg-green-500/10 text-green-600" },
@@ -225,6 +263,35 @@ const ProfilePage = () => {
             </Button>
           )}
         </div>
+
+        {/* Referral Section */}
+        {profile?.referral_code && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-card-foreground">
+              <Users className="h-5 w-5 text-primary" /> دعوة الأصدقاء
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              شارك رمز الإحالة مع أصدقائك واحصلا معاً على خصم 10% عند اشتراكهم!
+            </p>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 rounded-lg border border-border bg-muted/50 px-4 py-3 text-center font-mono text-lg font-bold tracking-widest text-foreground" dir="ltr">
+                {profile.referral_code}
+              </div>
+              <Button variant="outline" size="icon" onClick={copyReferralCode} className="shrink-0">
+                {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={shareReferral} className="shrink-0">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+            {referralStats && (referralStats.total > 0) && (
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>إحالات ناجحة: <strong className="text-foreground">{referralStats.completed}</strong></span>
+                <span>إجمالي الإحالات: <strong className="text-foreground">{referralStats.total}</strong></span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">

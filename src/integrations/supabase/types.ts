@@ -387,6 +387,8 @@ export type Database = {
           grade_id: string | null
           id: string
           phone: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string
           user_id: string
         }
@@ -397,6 +399,8 @@ export type Database = {
           grade_id?: string | null
           id?: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -407,6 +411,8 @@ export type Database = {
           grade_id?: string | null
           id?: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -468,6 +474,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          discount_percent: number
+          id: string
+          referred_id: string
+          referred_reward_applied: boolean
+          referrer_id: string
+          referrer_reward_applied: boolean
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          referred_id: string
+          referred_reward_applied?: boolean
+          referrer_id: string
+          referrer_reward_applied?: boolean
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          referred_id?: string
+          referred_reward_applied?: boolean
+          referrer_id?: string
+          referrer_reward_applied?: boolean
+          status?: string
+        }
+        Relationships: []
       }
       subjects: {
         Row: {
