@@ -91,9 +91,20 @@ const AdminPaymentsPage = () => {
       });
 
       if (action === "approved" && selectedRequest.subscription_id) {
+        // Get plan duration if linked
+        let durationMonths = 6; // default fallback
+        if ((selectedRequest as any).plan_id) {
+          const { data: planData } = await supabase
+            .from("subscription_plans")
+            .select("duration_months")
+            .eq("id", (selectedRequest as any).plan_id)
+            .single();
+          if (planData) durationMonths = planData.duration_months;
+        }
+
         const now = new Date();
         const expires = new Date(now);
-        expires.setMonth(expires.getMonth() + 6);
+        expires.setMonth(expires.getMonth() + durationMonths);
 
         const { error: subErr } = await supabase
           .from("subscriptions")

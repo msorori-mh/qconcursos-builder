@@ -34,6 +34,7 @@ const AdminLessons = lazy(() => import("./pages/admin/AdminLessons.tsx"));
 const AdminQuestions = lazy(() => import("./pages/admin/AdminQuestions.tsx"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments.tsx"));
 const AdminPaymentMethods = lazy(() => import("./pages/admin/AdminPaymentMethods.tsx"));
+const AdminSubscriptionPlans = lazy(() => import("./pages/admin/AdminSubscriptionPlans.tsx"));
 const AdminStudents = lazy(() => import("./pages/admin/AdminStudents.tsx"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports.tsx"));
 const AdminContactMessages = lazy(() => import("./pages/admin/AdminContactMessages.tsx"));
@@ -89,6 +90,7 @@ const App = () => (
                 <Route path="students" element={<AdminStudents />} />
                 <Route path="payments" element={<AdminPayments />} />
                 <Route path="payment-methods" element={<AdminPaymentMethods />} />
+                <Route path="subscription-plans" element={<AdminSubscriptionPlans />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="messages" element={<AdminContactMessages />} />
               </Route>

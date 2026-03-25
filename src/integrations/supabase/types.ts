@@ -314,6 +314,7 @@ export type Database = {
           currency: string
           id: string
           payment_method_id: string | null
+          plan_id: string | null
           receipt_url: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -328,6 +329,7 @@ export type Database = {
           currency?: string
           id?: string
           payment_method_id?: string | null
+          plan_id?: string | null
           receipt_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           currency?: string
           id?: string
           payment_method_id?: string | null
+          plan_id?: string | null
           receipt_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -355,6 +358,13 @@ export type Database = {
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
           {
@@ -465,6 +475,7 @@ export type Database = {
           id: string
           lessons_count: number | null
           name: string
+          semester: number | null
           slug: string
           sort_order: number
         }
@@ -476,6 +487,7 @@ export type Database = {
           id?: string
           lessons_count?: number | null
           name: string
+          semester?: number | null
           slug: string
           sort_order?: number
         }
@@ -487,6 +499,7 @@ export type Database = {
           id?: string
           lessons_count?: number | null
           name?: string
+          semester?: number | null
           slug?: string
           sort_order?: number
         }
@@ -500,12 +513,49 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          currency: string
+          duration_months: number
+          duration_type: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          duration_months?: number
+          duration_type: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          duration_months?: number
+          duration_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
           expires_at: string | null
           grade_id: string | null
           id: string
+          plan_id: string | null
           starts_at: string | null
           status: string
           updated_at: string
@@ -516,6 +566,7 @@ export type Database = {
           expires_at?: string | null
           grade_id?: string | null
           id?: string
+          plan_id?: string | null
           starts_at?: string | null
           status?: string
           updated_at?: string
@@ -526,6 +577,7 @@ export type Database = {
           expires_at?: string | null
           grade_id?: string | null
           id?: string
+          plan_id?: string | null
           starts_at?: string | null
           status?: string
           updated_at?: string
@@ -537,6 +589,13 @@ export type Database = {
             columns: ["grade_id"]
             isOneToOne: false
             referencedRelation: "grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
         ]
