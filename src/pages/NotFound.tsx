@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import SEOHead from "@/components/SEOHead";
 
 const NotFound = () => {
   const location = useLocation();
@@ -10,11 +11,16 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
+      <SEOHead
+        title="الصفحة غير موجودة"
+        description="الصفحة التي تبحث عنها غير موجودة. عد إلى الصفحة الرئيسية لمنصة تنوير التعليمية."
+        noIndex
+      />
       <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
+        <h1 className="mb-4 text-4xl font-bold text-foreground">404</h1>
+        <p className="mb-4 text-xl text-muted-foreground">عذرًا! الصفحة غير موجودة</p>
         <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
+          العودة للصفحة الرئيسية
         </a>
       </div>
     </div>
