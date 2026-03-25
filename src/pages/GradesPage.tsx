@@ -68,6 +68,12 @@ const GradesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="الصفوف الدراسية"
+        description="اختر صفك الدراسي للوصول إلى المواد والدروس التعليمية في منصة مَسار. المرحلة الإعدادية والثانوية."
+        canonical="/grades"
+        jsonLd={breadcrumbJsonLd([{ name: "الصفوف", url: "/grades" }])}
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-10">
         <div className="mb-10 text-center">
