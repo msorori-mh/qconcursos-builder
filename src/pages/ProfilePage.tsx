@@ -119,6 +119,43 @@ const ProfilePage = () => {
   const completedCount = progress.filter((p) => p.completed).length;
   const avgScore = progress.filter((p) => p.quiz_score != null).reduce((acc, p, _, arr) => acc + (p.quiz_score || 0) / arr.length, 0);
   const activeSub = subscriptions.find((s) => s.status === "active");
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  // Fetch referral stats
+  const { data: referralStats } = useQuery({
+    queryKey: ["referral-stats", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("referrals")
+        .select("id, status")
+        .eq("referrer_id", user!.id);
+      const total = data?.length || 0;
+      const completed = data?.filter((r: any) => r.status === "completed").length || 0;
+      return { total, completed };
+    },
+    enabled: !!user,
+  });
+
+  const copyReferralCode = () => {
+    if (profile?.referral_code) {
+      navigator.clipboard.writeText(profile.referral_code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+      toast({ title: "تم نسخ رمز الإحالة" });
+    }
+  };
+
+  const shareReferral = () => {
+    if (profile?.referral_code && navigator.share) {
+      navigator.share({
+        title: "انضم لمنصة تنوير التعليمية",
+        text: `سجّل في منصة تنوير باستخدام رمز الإحالة: ${profile.referral_code} واحصل على خصم على اشتراكك!`,
+        url: window.location.origin + "/auth",
+      }).catch(() => {});
+    } else {
+      copyReferralCode();
+    }
+  };
 
   const statusLabels: Record<string, { label: string; className: string }> = {
     active: { label: "فعّال", className: "bg-green-500/10 text-green-600" },
