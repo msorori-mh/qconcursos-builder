@@ -10,6 +10,7 @@ import {
   User, BookOpen, Award, Clock, CheckCircle2, CreditCard, Pencil, Save, X, Lock,
 } from "lucide-react";
 import StudentProgressDashboard from "@/components/StudentProgressDashboard";
+import CertificatesList from "@/components/CertificatesList";
 
 interface Profile {
   full_name: string | null;
