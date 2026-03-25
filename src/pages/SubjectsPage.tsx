@@ -1,7 +1,8 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, Navigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
@@ -50,6 +51,12 @@ const SubjectGrid = ({ subjects, gradeId }: { subjects: SubjectItem[]; gradeId: 
 
 const SubjectsPage = () => {
   const { gradeId } = useParams();
+  const { profile, isAdmin, loading: authLoading } = useAuth();
+
+  // Restrict non-admin students to their own grade
+  if (!authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId) {
+    return <Navigate to={`/grades/${profile.grade_id}/subjects`} replace />;
+  }
 
   const { data: grade } = useQuery({
     queryKey: ["grade", gradeId],
@@ -75,14 +82,10 @@ const SubjectsPage = () => {
   const isThirdSec = grade?.slug === "grade-12";
   const hasBranches = grade?.slug === "grade-11" || grade?.slug === "grade-12";
 
-  const sciSubjects = subjects.filter((s) => s.slug.endsWith("-sci") || (!s.slug.endsWith("-lit") && hasBranches && !s.slug.endsWith("-lit")));
-  const litSubjects = subjects.filter((s) => s.slug.endsWith("-lit"));
-
-  // For grades with branches, split scientific (non -lit slugs) from literary (-lit slugs)
   const sciOnly = hasBranches ? subjects.filter((s) => !s.slug.endsWith("-lit")) : [];
   const litOnly = hasBranches ? subjects.filter((s) => s.slug.endsWith("-lit")) : [];
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />

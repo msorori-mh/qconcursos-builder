@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ interface ProgressItem {
 }
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -44,10 +45,18 @@ const ProfilePage = () => {
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: "", phone: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", grade_id: "" });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [changingPassword, setChangingPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const { data: grades = [] } = useQuery({
+    queryKey: ["grades-profile"],
+    queryFn: async () => {
+      const { data } = await supabase.from("grades").select("id, name, category").order("sort_order");
+      return data || [];
+    },
+  });
 
   useEffect(() => {
     if (user) loadData();
@@ -62,7 +71,7 @@ const ProfilePage = () => {
     ]);
     if (profileRes.data) {
       setProfile(profileRes.data as Profile);
-      setEditForm({ full_name: profileRes.data.full_name || "", phone: profileRes.data.phone || "" });
+      setEditForm({ full_name: profileRes.data.full_name || "", phone: profileRes.data.phone || "", grade_id: profileRes.data.grade_id || "" });
     }
     if (subsRes.data) setSubscriptions(subsRes.data as any);
     if (progressRes.data) setProgress(progressRes.data as any);
@@ -74,13 +83,15 @@ const ProfilePage = () => {
     const { error } = await supabase.from("profiles").update({
       full_name: editForm.full_name || null,
       phone: editForm.phone || null,
+      grade_id: editForm.grade_id || null,
     }).eq("user_id", user.id);
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
       return;
     }
-    setProfile((p) => p ? { ...p, ...editForm } : p);
+    setProfile((p) => p ? { ...p, full_name: editForm.full_name, phone: editForm.phone, grade_id: editForm.grade_id } : p);
     setEditing(false);
+    await refreshProfile();
     toast({ title: "تم تحديث الملف الشخصي" });
   };
 
@@ -141,12 +152,34 @@ const ProfilePage = () => {
                   <div className="space-y-2">
                     <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} placeholder="الاسم الكامل" className="h-8" />
                     <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="رقم الهاتف" dir="ltr" className="h-8" />
+                    <select
+                      value={editForm.grade_id}
+                      onChange={(e) => setEditForm({ ...editForm, grade_id: e.target.value })}
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm h-8"
+                    >
+                      <option value="">اختر الصف</option>
+                      {grades.filter(g => g.category === "إعدادي").length > 0 && (
+                        <optgroup label="المرحلة الإعدادية">
+                          {grades.filter(g => g.category === "إعدادي").map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </optgroup>
+                      )}
+                      {grades.filter(g => g.category === "ثانوي").length > 0 && (
+                        <optgroup label="المرحلة الثانوية">
+                          {grades.filter(g => g.category === "ثانوي").map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </optgroup>
+                      )}
+                    </select>
                   </div>
                 ) : (
                   <>
                     <h1 className="text-xl font-bold text-card-foreground">{profile?.full_name || "طالب"}</h1>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
                     {profile?.phone && <p className="text-sm text-muted-foreground" dir="ltr">{profile.phone}</p>}
+                    {profile?.grade_id && (
+                      <p className="text-xs text-primary font-medium mt-1">
+                        {grades.find(g => g.id === profile.grade_id)?.name || ""}
+                      </p>
+                    )}
                   </>
                 )}
               </div>

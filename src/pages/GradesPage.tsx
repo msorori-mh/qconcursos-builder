@@ -1,7 +1,9 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
@@ -46,16 +48,26 @@ const GradeCard = ({ grade, i, special }: { grade: Grade; i: number; special?: b
 );
 
 const GradesPage = () => {
+  const { profile, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   const { data: grades = [], isLoading } = useQuery({
     queryKey: ["grades"],
     queryFn: fetchGrades,
   });
 
+  // Redirect non-admin students to their grade directly
+  useEffect(() => {
+    if (!authLoading && !isAdmin && profile?.grade_id) {
+      navigate(`/grades/${profile.grade_id}/subjects`, { replace: true });
+    }
+  }, [authLoading, isAdmin, profile, navigate]);
+
   const prep = grades.filter((g) => g.category === "إعدادي");
   const sec = grades.filter((g) => g.category === "ثانوي");
   const isThirdSec = (g: Grade) => g.sort_order === 6;
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -66,6 +78,8 @@ const GradesPage = () => {
     );
   }
 
+  // If non-admin student with grade_id, they'll be redirected above
+  // Show grades page only for admins or students without grade_id
   return (
     <div className="min-h-screen bg-background">
       <SEOHead

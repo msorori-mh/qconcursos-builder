@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, Mail, Phone, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import SEOHead from "@/components/SEOHead";
 
 const AuthPage = () => {
@@ -16,23 +16,56 @@ const AuthPage = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [gradeId, setGradeId] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+
+  const { data: grades = [] } = useQuery({
+    queryKey: ["grades-auth"],
+    queryFn: async () => {
+      const { data } = await supabase.from("grades").select("id, name, category, sort_order").order("sort_order");
+      return data || [];
+    },
+  });
 
   useEffect(() => {
-    if (user) navigate("/grades");
-  }, [user, navigate]);
+    if (user && profile) {
+      if (profile.grade_id) {
+        navigate(`/grades/${profile.grade_id}/subjects`);
+      } else {
+        navigate("/grades");
+      }
+    }
+  }, [user, profile, navigate]);
+
+  // Set default grade when grades load
+  useEffect(() => {
+    if (grades.length > 0 && !gradeId) {
+      setGradeId(grades[0].id);
+    }
+  }, [grades, gradeId]);
+
+  const saveGradeToProfile = async (userId: string) => {
+    if (gradeId) {
+      await supabase.from("profiles").update({ grade_id: gradeId }).eq("user_id", userId);
+    }
+  };
 
   const handleEmailAuth = async () => {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        if (!gradeId) {
+          toast({ title: "يرجى اختيار الصف الدراسي", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -41,11 +74,11 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
+        if (data.user) await saveGradeToProfile(data.user.id);
         toast({ title: "تم إنشاء الحساب", description: "تحقق من بريدك الإلكتروني لتأكيد الحساب" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/grades");
       }
     } catch (error: any) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
@@ -58,16 +91,24 @@ const AuthPage = () => {
     setLoading(true);
     try {
       if (!otpSent) {
-        const { error } = mode === "signup"
-          ? await supabase.auth.signUp({ phone, password, options: { data: { full_name: fullName } } })
-          : await supabase.auth.signInWithOtp({ phone });
-        if (error) throw error;
+        if (mode === "signup") {
+          if (!gradeId) {
+            toast({ title: "يرجى اختيار الصف الدراسي", variant: "destructive" });
+            setLoading(false);
+            return;
+          }
+          const { error } = await supabase.auth.signUp({ phone, password, options: { data: { full_name: fullName } } });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.auth.signInWithOtp({ phone });
+          if (error) throw error;
+        }
         setOtpSent(true);
         toast({ title: "تم إرسال رمز التحقق", description: "أدخل الرمز المرسل إلى هاتفك" });
       } else {
-        const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: mode === "signup" ? "sms" : "sms" });
+        const { data, error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
         if (error) throw error;
-        navigate("/grades");
+        if (mode === "signup" && data.user) await saveGradeToProfile(data.user.id);
       }
     } catch (error: any) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
@@ -81,6 +122,9 @@ const AuthPage = () => {
     if (method === "email") handleEmailAuth();
     else handlePhoneAuth();
   };
+
+  const prepGrades = grades.filter((g) => g.category === "إعدادي");
+  const secGrades = grades.filter((g) => g.category === "ثانوي");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -127,16 +171,39 @@ const AuthPage = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card">
           {mode === "signup" && (
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-card-foreground">الاسم الكامل</label>
-              <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="أدخل اسمك"
-                required
-                className="text-right"
-              />
-            </div>
+            <>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">الاسم الكامل</label>
+                <Input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="أدخل اسمك"
+                  required
+                  className="text-right"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">الصف الدراسي</label>
+                <select
+                  value={gradeId}
+                  onChange={(e) => setGradeId(e.target.value)}
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="" disabled>اختر صفك الدراسي</option>
+                  {prepGrades.length > 0 && (
+                    <optgroup label="المرحلة الإعدادية">
+                      {prepGrades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </optgroup>
+                  )}
+                  {secGrades.length > 0 && (
+                    <optgroup label="المرحلة الثانوية">
+                      {secGrades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+            </>
           )}
 
           {method === "email" ? (
