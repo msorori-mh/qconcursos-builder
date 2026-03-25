@@ -100,7 +100,7 @@ const LessonPage = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={lesson.title}
-        description={`درس ${lesson.title} - شرح فيديو واختبارات تفاعلية في منصة مَسار التعليمية.`}
+        description={`درس ${lesson.title} - شرح فيديو واختبارات تفاعلية في منصة تنوير التعليمية.`}
         canonical={`/grades/${gradeId}/subjects/${subjectId}/lessons/${lessonId}`}
         type="course"
         jsonLd={courseJsonLd(lesson.title, `درس ${lesson.title}`, `/grades/${gradeId}/subjects/${subjectId}/lessons/${lessonId}`)}

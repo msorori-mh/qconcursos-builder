@@ -156,7 +156,7 @@ const SubscribePage = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="الاشتراك"
-        description="اشترك في منصة مَسار التعليمية للوصول لجميع الدروس والاختبارات والمحتوى التعليمي."
+        description="اشترك في منصة تنوير التعليمية للوصول لجميع الدروس والاختبارات والمحتوى التعليمي."
         canonical="/subscribe"
         noIndex
       />

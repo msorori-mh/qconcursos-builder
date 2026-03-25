@@ -9,7 +9,7 @@ interface SEOHeadProps {
   noIndex?: boolean;
 }
 
-const SITE_NAME = "مَسار";
+const SITE_NAME = "تنوير";
 const BASE_URL = "https://studentamkeen.com";
 
 const SEOHead = ({ title, description, canonical, type = "website", jsonLd, noIndex }: SEOHeadProps) => {

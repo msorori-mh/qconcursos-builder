@@ -70,7 +70,7 @@ const GradesPage = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="الصفوف الدراسية"
-        description="اختر صفك الدراسي للوصول إلى المواد والدروس التعليمية في منصة مَسار. المرحلة الإعدادية والثانوية."
+        description="اختر صفك الدراسي للوصول إلى المواد والدروس التعليمية في منصة تنوير. المرحلة الإعدادية والثانوية."
         canonical="/grades"
         jsonLd={breadcrumbJsonLd([{ name: "الصفوف", url: "/grades" }])}
       />

@@ -53,7 +53,7 @@ const HeroSection = () => (
         <span className="block mt-2">طالب في اليمن 🇾🇪</span>
       </h1>
       <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-primary-foreground/85 md:text-lg opacity-0 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-        منصة مَسار توفر لك شروحات فيديو، ملخصات، وبنك أسئلة شامل لجميع المواد الدراسية. تعلّم في أي وقت ومن أي مكان.
+        منصة تنوير توفر لك شروحات فيديو، ملخصات، وبنك أسئلة شامل لجميع المواد الدراسية. تعلّم في أي وقت ومن أي مكان.
       </p>
       <div className="flex flex-col items-center justify-center gap-4 sm:flex-row opacity-0 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
         <Link to="/grades">
@@ -150,7 +150,7 @@ const CTASection = () => (
           ابدأ رحلتك التعليمية اليوم
         </h2>
         <p className="mx-auto mb-8 max-w-lg text-primary-foreground/80">
-          انضم لآلاف الطلاب الذين يستخدمون مَسار لتحقيق التفوق الدراسي
+          انضم لآلاف الطلاب الذين يستخدمون تنوير لتحقيق التفوق الدراسي
         </p>
         <Link to="/grades">
           <Button variant="accent" size="lg" className="px-10 py-6 text-base">
@@ -169,9 +169,9 @@ const Footer = () => (
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-hero-gradient">
           <BookOpen className="h-4 w-4 text-primary-foreground" />
         </div>
-        <span className="font-bold text-foreground">مَسار</span>
+        <span className="font-bold text-foreground">تنوير</span>
       </div>
-      <p className="text-sm text-muted-foreground">© 2024 مَسار — جميع الحقوق محفوظة</p>
+      <p className="text-sm text-muted-foreground">© 2024 تنوير — جميع الحقوق محفوظة</p>
     </div>
   </footer>
 );
