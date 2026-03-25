@@ -8,7 +8,7 @@ import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
 const LessonsPage = () => {
   const { gradeId, subjectId } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const { data: allLessons = [], isLoading } = useQuery({
@@ -73,7 +73,7 @@ const LessonsPage = () => {
 
   // First lesson (lowest sort_order, i.e. index 0) is always accessible
   const isLessonAccessible = (lesson: typeof lessons[0], index: number) => {
-    return index === 0 || lesson.is_free || hasSubscription;
+    return isAdmin || index === 0 || lesson.is_free || hasSubscription;
   };
 
   const handleLessonClick = (lesson: typeof lessons[0], index: number, e: React.MouseEvent) => {
@@ -133,7 +133,7 @@ const LessonsPage = () => {
           </div>
         )}
 
-        {!hasSubscription && (
+        {!hasSubscription && !isAdmin && (
           <Link to="/subscribe">
             <div className="mb-6 rounded-2xl border border-accent/30 bg-accent/5 p-5 text-center transition-all hover:shadow-card">
               <p className="text-sm font-semibold text-accent">

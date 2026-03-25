@@ -18,6 +18,7 @@ const SubjectsPage = lazy(() => import("./pages/SubjectsPage.tsx"));
 const LessonsPage = lazy(() => import("./pages/LessonsPage.tsx"));
 const LessonPage = lazy(() => import("./pages/LessonPage.tsx"));
 const SubjectExamPage = lazy(() => import("./pages/SubjectExamPage.tsx"));
+const QuestionBankPage = lazy(() => import("./pages/QuestionBankPage.tsx"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage.tsx"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.tsx"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons/:lessonId" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
               <Route path="/grades/:gradeId/subjects/:subjectId/exam" element={<ProtectedRoute><SubjectExamPage /></ProtectedRoute>} />
+              <Route path="/grades/:gradeId/subjects/:subjectId/quiz" element={<ProtectedRoute><QuestionBankPage /></ProtectedRoute>} />
               <Route path="/subscribe" element={<ProtectedRoute><SubscribePage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
