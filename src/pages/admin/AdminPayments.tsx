@@ -262,13 +262,18 @@ const AdminPaymentsPage = () => {
             </a>
           )}
 
-          <textarea
-            placeholder="ملاحظات (اختياري)..."
-            value={adminNotes}
-            onChange={(e) => setAdminNotes(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            rows={3}
-          />
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              ملاحظات {filter === "pending" ? "(سبب الرفض في حالة الرفض)" : "(اختياري)"}
+            </label>
+            <textarea
+              placeholder="اكتب سبب الرفض هنا ليصل كإشعار للطالب..."
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              rows={3}
+            />
+          </div>
 
           <div className="flex gap-3">
             <Button
