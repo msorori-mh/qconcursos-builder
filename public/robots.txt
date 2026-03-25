@@ -17,4 +17,4 @@ Disallow: /auth
 Disallow: /reset-password
 Disallow: /forgot-password
 
-Sitemap: https://studentamkeen.com/sitemap.xml
+Sitemap: https://japawsxstnaynpdowufa.supabase.co/functions/v1/sitemap
