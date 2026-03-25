@@ -86,7 +86,7 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <SEOHead
         title={mode === "login" ? "تسجيل الدخول" : "إنشاء حساب"}
-        description="سجل دخولك أو أنشئ حساباً جديداً في منصة مَسار التعليمية للوصول إلى الدروس والاختبارات."
+        description="سجل دخولك أو أنشئ حساباً جديداً في منصة تنوير التعليمية للوصول إلى الدروس والاختبارات."
         canonical="/auth"
         noIndex
       />

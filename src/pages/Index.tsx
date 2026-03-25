@@ -6,8 +6,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="مَسار — منصة تعليمية لطلاب اليمن"
-        description="منصة مَسار التعليمية تقدم شروحات فيديو ودروس تفاعلية واختبارات لطلاب المرحلة الإعدادية والثانوية في اليمن. ابدأ رحلتك التعليمية الآن!"
+        title="تنوير — منصة تعليمية لطلاب اليمن"
+        description="منصة تنوير التعليمية تقدم شروحات فيديو ودروس تفاعلية واختبارات لطلاب المرحلة الإعدادية والثانوية في اليمن. ابدأ رحلتك التعليمية الآن!"
         canonical="/"
         jsonLd={{ "@context": "https://schema.org", "@graph": [websiteJsonLd(), educationalOrgJsonLd()] }}
       />
