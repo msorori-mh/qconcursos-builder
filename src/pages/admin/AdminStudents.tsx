@@ -113,12 +113,11 @@ const AdminStudents = () => {
     setProcessing(true);
     try {
       if (activate) {
-        if (student.subscription) {
-          // Update existing subscription
-          const now = new Date();
-          const expires = new Date(now);
-          expires.setMonth(expires.getMonth() + 6);
+        const now = new Date();
+        const expires = new Date(now);
+        expires.setMonth(expires.getMonth() + 6);
 
+        if (student.subscription) {
           const { error } = await supabase
             .from("subscriptions")
             .update({
@@ -129,11 +128,6 @@ const AdminStudents = () => {
             .eq("id", student.subscription.id);
           if (error) throw error;
         } else {
-          // Create new subscription
-          const now = new Date();
-          const expires = new Date(now);
-          expires.setMonth(expires.getMonth() + 6);
-
           const { error } = await supabase
             .from("subscriptions")
             .insert({
