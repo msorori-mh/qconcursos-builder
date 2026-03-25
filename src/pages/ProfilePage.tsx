@@ -240,6 +240,9 @@ const ProfilePage = () => {
           )}
         </div>
 
+        {/* Certificates */}
+        <CertificatesList />
+
         {/* Student Progress Dashboard */}
         <StudentProgressDashboard />
 
