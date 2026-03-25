@@ -152,9 +152,19 @@ const SubjectsPage = () => {
         <div className="mb-10">
           <h1 className="mb-2 text-2xl font-bold text-foreground md:text-3xl">{gradeName}</h1>
           <p className="text-muted-foreground">اختر المادة الدراسية للبدء</p>
+          {hasActiveSubscription && !isAdmin && subscriptionSemester && !isAnnual && (
+            <p className="mt-2 text-sm text-primary font-medium">
+              📅 اشتراكك يشمل مواد الفصل الدراسي {subscriptionSemester === 1 ? "الأول" : "الثاني"}
+            </p>
+          )}
+          {hasActiveSubscription && !isAdmin && isAnnual && (
+            <p className="mt-2 text-sm text-primary font-medium">
+              📅 اشتراكك السنوي يشمل مواد الفصلين الدراسيين
+            </p>
+          )}
         </div>
 
-        {subjects.length === 0 ? (
+        {filteredSubjects.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
             <p className="text-muted-foreground">لم تُضاف مواد لهذا الصف بعد</p>
           </div>
