@@ -180,7 +180,7 @@ const AdminContactMessages = () => {
       )}
 
       {totalPages > 1 && (
-        <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalCount={total} pageSize={PAGE_SIZE} />
       )}
 
       {/* Message detail dialog */}
