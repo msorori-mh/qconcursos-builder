@@ -74,34 +74,29 @@ const SubjectsPage = () => {
           <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
             <p className="text-muted-foreground">لم تُضاف مواد لهذا الصف بعد</p>
           </div>
+        ) : hasBranches ? (
+          <>
+            {sciSubjects.length > 0 && (
+              <div className="mb-8">
+                <h2 className="mb-4 text-lg font-bold text-foreground flex items-center gap-2">
+                  <Atom className="h-5 w-5 text-primary" />
+                  الفرع العلمي
+                </h2>
+                <SubjectGrid subjects={sciSubjects} gradeId={gradeId!} />
+              </div>
+            )}
+            {litSubjects.length > 0 && (
+              <div className="mb-8">
+                <h2 className="mb-4 text-lg font-bold text-foreground flex items-center gap-2">
+                  <BookText className="h-5 w-5 text-accent" />
+                  الفرع الأدبي
+                </h2>
+                <SubjectGrid subjects={litSubjects} gradeId={gradeId!} />
+              </div>
+            )}
+          </>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject, i) => {
-              const IconComp = iconMap[subject.icon || "BookOpen"] || BookOpen;
-              const color = subject.color || "#3b82f6";
-              return (
-                <Link
-                  key={subject.id}
-                  to={`/grades/${gradeId}/subjects/${subject.id}/lessons`}
-                  className="group opacity-0 animate-fade-in-up"
-                  style={{ animationDelay: `${i * 0.08}s` }}
-                >
-                  <div className="rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl" style={{ backgroundColor: color + "18" }}>
-                        <IconComp className="h-7 w-7" style={{ color }} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-card-foreground">{subject.name}</h3>
-                        <p className="text-sm text-muted-foreground">{subject.lessons_count || 0} درس</p>
-                      </div>
-                      <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-1" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <SubjectGrid subjects={subjects} gradeId={gradeId!} />
         )}
 
         {isThirdSec && (
