@@ -9,6 +9,7 @@ import {
   CreditCard,
   Wallet,
   Users,
+  BarChart3,
   ArrowRight,
   Menu,
   X,
@@ -27,6 +28,7 @@ const sidebarLinks = [
   { href: "/admin/students", label: "الطلاب", icon: Users },
   { href: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
   { href: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
+  { href: "/admin/reports", label: "التقارير", icon: BarChart3 },
 ];
 
 const AdminLayout = () => {
