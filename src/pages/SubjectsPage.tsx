@@ -53,7 +53,7 @@ const SubjectGrid = ({ subjects, gradeId }: { subjects: SubjectItem[]; gradeId: 
 
 const SubjectsPage = () => {
   const { gradeId } = useParams();
-  const { profile, isAdmin, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, loading: authLoading } = useAuth();
 
   // Restrict non-admin students to their own grade
   if (!authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId) {
@@ -73,19 +73,51 @@ const SubjectsPage = () => {
   const { data: subjects = [], isLoading } = useQuery({
     queryKey: ["subjects", gradeId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("subjects").select("id, name, slug, icon, color, lessons_count").eq("grade_id", gradeId!).order("sort_order");
+      const { data, error } = await supabase.from("subjects").select("id, name, slug, icon, color, lessons_count, semester").eq("grade_id", gradeId!).order("sort_order");
       if (error) throw error;
-      return data || [];
+      return (data || []) as SubjectItem[];
     },
     enabled: !!gradeId,
   });
+
+  // Get active subscription to check semester access
+  const { data: activeSub } = useQuery({
+    queryKey: ["active-subscription", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("id, status, semester, plan_id, subscription_plans(duration_type)")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!user && !isAdmin,
+  });
+
+  const hasActiveSubscription = !!activeSub;
+  const subscriptionSemester = activeSub?.semester;
+  const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
+
+  // Filter subjects based on subscription semester
+  const filterBySemester = (subs: SubjectItem[]) => {
+    if (isAdmin || !hasActiveSubscription) return subs;
+    if (isAnnual) return subs; // annual sees all
+    if (subscriptionSemester) {
+      return subs.filter(s => !s.semester || s.semester === subscriptionSemester);
+    }
+    return subs;
+  };
+
+  const filteredSubjects = filterBySemester(subjects);
 
   const gradeName = grade?.name || "الصف الدراسي";
   const isThirdSec = grade?.slug === "grade-12";
   const hasBranches = grade?.slug === "grade-11" || grade?.slug === "grade-12";
 
-  const sciOnly = hasBranches ? subjects.filter((s) => !s.slug.endsWith("-lit")) : [];
-  const litOnly = hasBranches ? subjects.filter((s) => s.slug.endsWith("-lit")) : [];
+  const sciOnly = hasBranches ? filteredSubjects.filter((s) => !s.slug.endsWith("-lit")) : [];
+  const litOnly = hasBranches ? filteredSubjects.filter((s) => s.slug.endsWith("-lit")) : [];
 
   if (isLoading || authLoading) {
     return (
