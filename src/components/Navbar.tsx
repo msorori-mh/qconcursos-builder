@@ -16,6 +16,7 @@ const Navbar = () => {
     { href: "/", label: "الرئيسية" },
     { href: "/grades", label: "الصفوف الدراسية" },
     { href: "/about", label: "من نحن" },
+    { href: "/contact", label: "تواصل معنا" },
   ];
 
   const handleSignOut = async () => {
