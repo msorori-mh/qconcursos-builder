@@ -237,6 +237,7 @@ const ProfilePage = () => {
 
   return (
     <>
+      <SEOHead title="الملف الشخصي" description="عرض وتعديل ملفك الشخصي وتتبع تقدمك الدراسي في منصة تنوير التعليمية." noIndex />
       <Navbar />
       <div className="container mx-auto max-w-4xl px-4 py-6 md:py-10 space-y-6">
 
