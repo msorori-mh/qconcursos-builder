@@ -78,10 +78,7 @@ const SubjectsPage = () => {
   const { gradeId } = useParams();
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
 
-  // Restrict non-admin students to their own grade
-  if (!authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId) {
-    return <Navigate to={`/grades/${profile.grade_id}/subjects`} replace />;
-  }
+  const shouldRedirect = !authLoading && !isAdmin && profile?.grade_id && profile.grade_id !== gradeId;
 
   const { data: grade } = useQuery({
     queryKey: ["grade", gradeId],
