@@ -43,14 +43,7 @@ const LessonsPage = () => {
 
   const subscriptionSemester = activeSub?.semester;
   const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
-
-  const { data: hasSubscription = false } = useQuery({
-    queryKey: ["subscription-check", user?.id],
-    queryFn: async () => {
-      return !!activeSub;
-    },
-    enabled: !!user,
-  });
+  const hasSubscription = !!activeSub;
 
   // Filter lessons by semester if user has semester subscription
   const lessons = allLessons.filter(l => {
