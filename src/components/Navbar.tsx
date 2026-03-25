@@ -19,8 +19,10 @@ const Navbar = () => {
   const links = [
     { href: "/", label: "الرئيسية" },
     { href: gradesHref, label: isAdmin ? "الصفوف الدراسية" : "المواد الدراسية" },
-    { href: "/about", label: "من نحن" },
-    { href: "/contact", label: "تواصل معنا" },
+    ...(!user ? [
+      { href: "/about", label: "من نحن" },
+      { href: "/contact", label: "تواصل معنا" },
+    ] : []),
   ];
 
   const handleSignOut = async () => {
