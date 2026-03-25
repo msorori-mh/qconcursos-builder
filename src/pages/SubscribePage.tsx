@@ -241,7 +241,33 @@ const SubscribePage = () => {
           </div>
         )}
 
-        {/* Step 1: Choose method type */}
+        {/* Step: Choose semester (for semester plans) */}
+        {step === "semester" && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-foreground">اختر الفصل الدراسي</h2>
+            <p className="text-sm text-muted-foreground mb-2">ستتمكن من الوصول لمحتوى مواد الفصل الذي تختاره فقط</p>
+            {[1, 2].map((sem) => (
+              <button
+                key={sem}
+                onClick={() => { setSelectedSemester(sem); setStep("method"); }}
+                className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+                    <CalendarDays className="h-7 w-7 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-card-foreground">الفصل الدراسي {sem === 1 ? "الأول" : "الثاني"}</h3>
+                    <p className="text-sm text-muted-foreground">الوصول لجميع مواد الفصل {sem === 1 ? "الأول" : "الثاني"}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+            <Button variant="outline" className="w-full" onClick={() => { setStep("plan"); setSelectedPlan(null); }}>رجوع</Button>
+          </div>
+        )}
+
+        {/* Step: Choose method type */}
         {step === "method" && (
           <div className="space-y-4">
             <button onClick={() => loadMethods("bank")} className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5">
@@ -266,7 +292,13 @@ const SubscribePage = () => {
                 </div>
               </div>
             </button>
-            <Button variant="outline" className="w-full" onClick={() => { setStep("plan"); setSelectedPlan(null); }}>رجوع</Button>
+            <Button variant="outline" className="w-full" onClick={() => {
+              if (selectedPlan?.duration_type === "semester") {
+                setStep("semester");
+              } else {
+                setStep("plan"); setSelectedPlan(null);
+              }
+            }}>رجوع</Button>
           </div>
         )}
 
