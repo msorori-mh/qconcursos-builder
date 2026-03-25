@@ -22,6 +22,7 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.tsx"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx"));
 const AboutPage = lazy(() => import("./pages/AboutPage.tsx"));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout.tsx"));
