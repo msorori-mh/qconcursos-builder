@@ -19,7 +19,7 @@ interface ExamQuestion {
 
 const SubjectExamPage = () => {
   const { gradeId, subjectId } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const [started, setStarted] = useState(false);
