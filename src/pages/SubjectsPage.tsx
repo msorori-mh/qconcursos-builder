@@ -119,6 +119,45 @@ const SubjectsPage = () => {
     enabled: !!user && !isAdmin,
   });
 
+  // Fetch progress: completed lessons per subject
+  const subjectIds = subjects.map((s) => s.id);
+  const { data: progressData } = useQuery({
+    queryKey: ["subject-progress", user?.id, subjectIds],
+    queryFn: async () => {
+      // Get all lessons for these subjects
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id, subject_id")
+        .in("subject_id", subjectIds);
+      if (!lessons?.length) return {} as Record<string, SubjectProgress>;
+
+      // Get completed progress
+      const lessonIds = lessons.map((l) => l.id);
+      const { data: progress } = await supabase
+        .from("user_progress")
+        .select("lesson_id")
+        .eq("user_id", user!.id)
+        .eq("completed", true)
+        .in("lesson_id", lessonIds);
+
+      const completedSet = new Set((progress || []).map((p) => p.lesson_id));
+
+      // Build map
+      const map: Record<string, SubjectProgress> = {};
+      for (const s of subjects) {
+        const subLessons = lessons.filter((l) => l.subject_id === s.id);
+        map[s.id] = {
+          total: subLessons.length,
+          completed: subLessons.filter((l) => completedSet.has(l.id)).length,
+        };
+      }
+      return map;
+    },
+    enabled: !!user && !isAdmin && subjectIds.length > 0,
+  });
+
+  const progressMap = progressData || {};
+
   const hasActiveSubscription = !!activeSub;
   const subscriptionSemester = activeSub?.semester;
   const isAnnual = (activeSub as any)?.subscription_plans?.duration_type === "annual";
