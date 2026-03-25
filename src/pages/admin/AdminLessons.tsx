@@ -96,6 +96,7 @@ const AdminLessons = () => {
       duration: l.duration || "", is_free: l.is_free ?? true,
       video_url: l.video_url || "", content_text: l.content_text || "",
       content_pdf_url: l.content_pdf_url || "", sort_order: l.sort_order,
+      semester: l.semester ?? "",
     });
     setDialogOpen(true);
   };
@@ -110,6 +111,7 @@ const AdminLessons = () => {
       duration: form.duration || null, is_free: form.is_free,
       video_url: form.video_url || null, content_text: form.content_text || null,
       content_pdf_url: form.content_pdf_url || null, sort_order: form.sort_order,
+      semester: form.semester === "" ? null : Number(form.semester),
     };
     if (editing) {
       const { error } = await supabase.from("lessons").update(payload).eq("id", editing.id);
