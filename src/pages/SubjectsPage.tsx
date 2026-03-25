@@ -234,7 +234,7 @@ const SubjectsPage = () => {
                   <Atom className="h-5 w-5 text-primary" />
                   الفرع العلمي
                 </h2>
-                <SubjectGrid subjects={sciOnly} gradeId={gradeId!} />
+                <SubjectGrid subjects={sciOnly} gradeId={gradeId!} progressMap={progressMap} />
               </div>
             )}
             {litOnly.length > 0 && (
