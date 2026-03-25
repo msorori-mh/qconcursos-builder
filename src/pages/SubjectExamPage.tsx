@@ -108,7 +108,7 @@ const SubjectExamPage = () => {
   }
 
   // Gate: require subscription for exam
-  if (!hasSubscription) {
+  if (!hasSubscription && !isAdmin) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
