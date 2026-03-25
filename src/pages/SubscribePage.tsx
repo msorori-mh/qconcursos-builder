@@ -124,6 +124,11 @@ const SubscribePage = () => {
 
       const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(fileName);
 
+      // Calculate discounted amount
+      const discountedAmount = referralDiscount > 0
+        ? Math.round(selectedPlan.price * (1 - referralDiscount / 100))
+        : selectedPlan.price;
+
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
         .insert({ user_id: user.id, status: "pending", plan_id: selectedPlan.id, semester: selectedSemester })
@@ -138,12 +143,21 @@ const SubscribePage = () => {
           subscription_id: sub.id,
           payment_method_id: selectedMethod.id,
           plan_id: selectedPlan.id,
-          amount: selectedPlan.price,
+          amount: discountedAmount,
           currency: selectedPlan.currency,
           receipt_url: urlData.publicUrl,
           status: "pending",
+          admin_notes: referralDiscount > 0 ? `خصم إحالة ${referralDiscount}% — المبلغ الأصلي: ${selectedPlan.price}` : null,
         });
       if (payError) throw payError;
+
+      // Mark referral as completed if discount was applied
+      if (referralId && referralDiscount > 0) {
+        await supabase
+          .from("referrals")
+          .update({ status: "completed", referred_reward_applied: true, completed_at: new Date().toISOString() })
+          .eq("id", referralId);
+      }
 
       setStep("done");
       toast({ title: "تم إرسال طلبك بنجاح", description: "سيتم مراجعة سند التحويل خلال 24 ساعة" });
@@ -153,6 +167,10 @@ const SubscribePage = () => {
       setUploading(false);
     }
   };
+
+  const discountedPrice = selectedPlan && referralDiscount > 0
+    ? Math.round(selectedPlan.price * (1 - referralDiscount / 100))
+    : null;
 
   const stepLabels = selectedPlan?.duration_type === "semester"
     ? ["اختيار الخطة", "اختيار الفصل", "طريقة الدفع", "تفاصيل الحساب", "رفع السند"]
