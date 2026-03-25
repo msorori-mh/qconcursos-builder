@@ -10,11 +10,15 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile, isAdmin } = useAuth();
+
+  const gradesHref = !isAdmin && profile?.grade_id
+    ? `/grades/${profile.grade_id}/subjects`
+    : "/grades";
 
   const links = [
     { href: "/", label: "الرئيسية" },
-    { href: "/grades", label: "الصفوف الدراسية" },
+    { href: gradesHref, label: isAdmin ? "الصفوف الدراسية" : "المواد الدراسية" },
     { href: "/about", label: "من نحن" },
     { href: "/contact", label: "تواصل معنا" },
   ];
