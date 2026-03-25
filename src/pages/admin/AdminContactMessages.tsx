@@ -204,7 +204,20 @@ const AdminContactMessages = () => {
                 <div className="rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                   {selected.message}
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="hero"
+                    className="gap-1.5"
+                    asChild
+                  >
+                    <a
+                      href={`mailto:${encodeURIComponent(selected.email)}?subject=${encodeURIComponent("رد: " + selected.subject)}&body=${encodeURIComponent("\n\n---\nالرسالة الأصلية:\n" + selected.message)}`}
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      الرد عبر البريد
+                    </a>
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -212,7 +225,7 @@ const AdminContactMessages = () => {
                     onClick={() => toggleRead(selected)}
                   >
                     {selected.is_read ? <Mail className="h-3.5 w-3.5" /> : <MailOpen className="h-3.5 w-3.5" />}
-                    {selected.is_read ? "تمييز كغير مقروءة" : "تمييز كمقروءة"}
+                    {selected.is_read ? "غير مقروءة" : "مقروءة"}
                   </Button>
                   <Button
                     size="sm"
