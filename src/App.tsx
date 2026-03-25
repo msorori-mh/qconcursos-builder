@@ -80,6 +80,7 @@ const App = () => (
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons" element={<ProtectedRoute><LessonsPage /></ProtectedRoute>} />
               <Route path="/grades/:gradeId/subjects/:subjectId/lessons/:lessonId" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
               <Route path="/grades/:gradeId/subjects/:subjectId/exam" element={<ProtectedRoute><SubjectExamPage /></ProtectedRoute>} />
+              <Route path="/grades/:gradeId/subjects/:subjectId/quiz" element={<ProtectedRoute><QuestionBankPage /></ProtectedRoute>} />
               <Route path="/subscribe" element={<ProtectedRoute><SubscribePage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
