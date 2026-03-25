@@ -190,7 +190,7 @@ const SubjectsPage = () => {
             )}
           </>
         ) : (
-          <SubjectGrid subjects={subjects} gradeId={gradeId!} />
+          <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} />
         )}
 
         {isThirdSec && (
