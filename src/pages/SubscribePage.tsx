@@ -285,7 +285,14 @@ const SubscribePage = () => {
                       </p>
                     </div>
                     <div className="text-left">
-                      <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+                      {referralDiscount > 0 ? (
+                        <>
+                          <p className="text-xs line-through text-muted-foreground">{plan.price.toLocaleString("ar-YE")}</p>
+                          <p className="text-lg font-bold text-green-600">{Math.round(plan.price * (1 - referralDiscount / 100)).toLocaleString("ar-YE")}</p>
+                        </>
+                      ) : (
+                        <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">{plan.currency}</p>
                     </div>
                   </div>
