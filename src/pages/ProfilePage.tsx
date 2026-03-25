@@ -83,13 +83,15 @@ const ProfilePage = () => {
     const { error } = await supabase.from("profiles").update({
       full_name: editForm.full_name || null,
       phone: editForm.phone || null,
+      grade_id: editForm.grade_id || null,
     }).eq("user_id", user.id);
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
       return;
     }
-    setProfile((p) => p ? { ...p, ...editForm } : p);
+    setProfile((p) => p ? { ...p, full_name: editForm.full_name, phone: editForm.phone, grade_id: editForm.grade_id } : p);
     setEditing(false);
+    await refreshProfile();
     toast({ title: "تم تحديث الملف الشخصي" });
   };
 
