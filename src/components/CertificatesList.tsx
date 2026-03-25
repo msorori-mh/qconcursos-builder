@@ -41,37 +41,28 @@ const CertificatesList = () => {
 
   const downloadCertificate = () => {
     if (!certRef.current) return;
-    // Use canvas to render certificate as image
     const el = certRef.current;
-    import("html2canvas" as any)
-      .then(() => {
-        // Fallback: just print
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          printWindow.document.write(`
-            <!DOCTYPE html>
-            <html dir="rtl" lang="ar">
-            <head>
-              <meta charset="utf-8" />
-              <title>شهادة إتمام</title>
-              <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-              <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Cairo', sans-serif; }
-                @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-              </style>
-            </head>
-            <body>${el.outerHTML}</body>
-            <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
-            </html>
-          `);
-          printWindow.document.close();
-        }
-      })
-      .catch(() => {
-        // Same fallback
-        window.print();
-      });
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="utf-8" />
+          <title>شهادة إتمام</title>
+          <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Cairo', sans-serif; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>${el.outerHTML}</body>
+        <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
+        </html>
+      `);
+      printWindow.document.close();
+    }
   };
 
   if (loading) {
