@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import SEOHead, { courseJsonLd } from "@/components/SEOHead";
 import LazyMedia from "@/components/LazyMedia";
 import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 

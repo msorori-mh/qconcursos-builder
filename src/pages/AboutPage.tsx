@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { BookOpen, Target, Users, Award, Heart, Lightbulb } from "lucide-react";
+import SEOHead from "@/components/SEOHead";
 
 const team = [
   { name: "أ. محمد العمري", role: "المؤسس والمدير التنفيذي", icon: Lightbulb },

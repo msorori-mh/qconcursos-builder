@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { Mail, Phone, MapPin, Send, CheckCircle } from "lucide-react";
+import SEOHead from "@/components/SEOHead";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({

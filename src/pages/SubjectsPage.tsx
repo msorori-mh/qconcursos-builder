@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, D
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
 const iconMap: Record<string, any> = {
   Calculator, Globe, FlaskConical, Atom, BookText, BookOpen, Dumbbell,

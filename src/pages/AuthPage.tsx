@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import SEOHead from "@/components/SEOHead";
 
 const AuthPage = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
