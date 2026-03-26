@@ -50,7 +50,20 @@ interface MonthlyData { month: string; revenue: number; students: number; }
 interface GovData { name: string; count: number; }
 interface SchoolData { name: string; count: number; governorate: string; }
 
+const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+  const bom = "\uFEFF";
+  const csv = bom + [headers.join(","), ...rows.map((r) => r.map((c) => `"${(c ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const AdminReports = () => {
+  const { toast } = useToast();
   // Raw data
   const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
   const [rawPayments, setRawPayments] = useState<RawPayment[]>([]);
