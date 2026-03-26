@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, FileText, HelpCircle, CheckCircle, Clock, Lock } from "lucide-react";
+import { ArrowLeft, Play, FileText, HelpCircle, CheckCircle, Clock, Lock, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -220,6 +220,13 @@ const LessonsPage = () => {
               <FileText className="mx-auto mb-2 h-8 w-8 text-accent" />
               <h3 className="font-bold text-card-foreground">اختبار شامل</h3>
               <p className="text-sm text-muted-foreground">اختبر نفسك في الوحدة كاملة</p>
+            </div>
+          </Link>
+          <Link to={`/grades/${gradeId}/subjects/${subjectId}/review`} className="flex-1">
+            <div className="rounded-2xl border border-border bg-card p-5 text-center shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer">
+              <Zap className="mx-auto mb-2 h-8 w-8 text-accent" />
+              <h3 className="font-bold text-card-foreground">مراجعة سريعة</h3>
+              <p className="text-sm text-muted-foreground">ملخص وأسئلة قبل الامتحان</p>
             </div>
           </Link>
         </div>
