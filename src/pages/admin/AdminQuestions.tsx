@@ -714,9 +714,9 @@ const AdminQuestions = () => {
                     <p className="text-sm font-medium text-foreground">
                       {importFile ? importFile.name : "اضغط لرفع ملف CSV أو TXT"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">يدعم ملفات CSV و TXT مفصولة بفواصل أو Tab</p>
+                    <p className="text-xs text-muted-foreground mt-1">يدعم ملفات Excel (.xlsx) و CSV و TXT</p>
                   </div>
-                  <input type="file" accept=".csv,.txt,.tsv" onChange={handleFileChange} className="hidden" />
+                  <input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" onChange={handleFileChange} className="hidden" />
                 </label>
               </div>
               <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1.5">
