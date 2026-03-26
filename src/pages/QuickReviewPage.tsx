@@ -25,21 +25,6 @@ const LessonSummaryCard = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  // Extract key points from content (first 3 paragraphs or headings)
-  const keyPoints = useMemo(() => {
-    if (!lesson.content_text) return [];
-    const lines = lesson.content_text.split("\n").filter((l) => l.trim());
-    const points: string[] = [];
-    for (const line of lines) {
-      const clean = line.replace(/^#+\s*/, "").trim();
-      if (clean && clean.length > 10) {
-        points.push(clean);
-        if (points.length >= 5) break;
-      }
-    }
-    return points;
-  }, [lesson.content_text]);
-
   return (
     <div
       className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-card opacity-0 animate-fade-in-up"
@@ -72,26 +57,21 @@ const LessonSummaryCard = ({
             </div>
           </div>
         </div>
-        {keyPoints.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 shrink-0"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 shrink-0"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </div>
 
-      {expanded && keyPoints.length > 0 && (
-        <div className="mt-3 pr-11 space-y-1.5">
-          {keyPoints.map((point, i) => (
-            <p key={i} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              {point}
-            </p>
-          ))}
+      {expanded && (
+        <div className="mt-3">
+          <Suspense fallback={<div className="flex justify-center py-4"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+            <AiLessonSummary lessonTitle={lesson.title} lessonContent={lesson.content_text} />
+          </Suspense>
         </div>
       )}
     </div>
