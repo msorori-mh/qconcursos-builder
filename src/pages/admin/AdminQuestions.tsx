@@ -492,7 +492,16 @@ const AdminQuestions = () => {
           <Button variant="outline" size="sm" onClick={() => exportQuestions("xlsx")} disabled={exporting} className="gap-1.5">
             <FileSpreadsheet className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير Excel"}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => {
+            setImportDialogOpen(true);
+            setImportFile(null);
+            setImportPreview(null);
+            setImportGrade("");
+            setImportSubject("");
+            setImportLesson("");
+            setImportSemester("");
+            setImportType("lesson");
+          }} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
           </Button>
           <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
