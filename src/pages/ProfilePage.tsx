@@ -639,6 +639,17 @@ const ProfilePage = () => {
                         )}
                       </select>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-card-foreground">المحافظة</label>
+                      <select value={editForm.governorate} onChange={(e) => setEditForm({ ...editForm, governorate: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="">اختر المحافظة</option>
+                        {YEMEN_GOVERNORATES.map((gov) => <option key={gov} value={gov}>{gov}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-card-foreground">اسم المدرسة</label>
+                      <Input value={editForm.school_name} onChange={(e) => setEditForm({ ...editForm, school_name: e.target.value })} placeholder="أدخل اسم مدرستك" />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -647,6 +658,8 @@ const ProfilePage = () => {
                       { label: "البريد الإلكتروني", value: user?.email || "—" },
                       { label: "الهاتف", value: profile?.phone || "—" },
                       { label: "الصف", value: grades.find((g) => g.id === profile?.grade_id)?.name || "—" },
+                      { label: "المحافظة", value: profile?.governorate || "—" },
+                      { label: "المدرسة", value: profile?.school_name || "—" },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
                         <span className="text-sm text-muted-foreground">{item.label}</span>
