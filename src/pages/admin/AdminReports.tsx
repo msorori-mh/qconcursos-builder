@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend, PieChart, Pie, Cell,
 } from "recharts";
 import {
-  TrendingUp, DollarSign, Users, BookOpen, FileText, HelpCircle,
-  GraduationCap, Calendar, MapPin, School,
+  TrendingUp, DollarSign, Users, BookOpen, FileText,
+  GraduationCap, Calendar, MapPin, School, SlidersHorizontal, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 const COLORS = [
   "hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--success))",
@@ -20,112 +26,181 @@ const COLORS = [
 
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
+const TIME_RANGES = [
+  { key: "3m", label: "آخر 3 أشهر", months: 3 },
+  { key: "6m", label: "آخر 6 أشهر", months: 6 },
+  { key: "12m", label: "آخر 12 شهر", months: 12 },
+  { key: "all", label: "الكل", months: 0 },
+] as const;
+
+type TimeRange = typeof TIME_RANGES[number]["key"];
+
+// Raw data interfaces
+interface RawProfile { created_at: string; governorate: string | null; school_name: string | null; grade_id: string | null; }
+interface RawPayment { amount: number; created_at: string; }
+interface RawSub { status: string; user_id: string; created_at: string; grade_id: string | null; }
+interface Grade { id: string; name: string; }
+
+// Chart data interfaces
 interface MonthlyData { month: string; revenue: number; students: number; }
-interface ContentData { name: string; count: number; }
-interface GradeSubData { grade: string; subjects: number; lessons: number; }
 interface GovData { name: string; count: number; }
 interface SchoolData { name: string; count: number; governorate: string; }
 
 const AdminReports = () => {
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [contentData, setContentData] = useState<ContentData[]>([]);
-  const [gradeData, setGradeData] = useState<GradeSubData[]>([]);
-  const [subStatusData, setSubStatusData] = useState<{ name: string; value: number }[]>([]);
-  const [govData, setGovData] = useState<GovData[]>([]);
-  const [schoolData, setSchoolData] = useState<SchoolData[]>([]);
+  // Raw data
+  const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
+  const [rawPayments, setRawPayments] = useState<RawPayment[]>([]);
+  const [rawSubs, setRawSubs] = useState<RawSub[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [subjectsData, setSubjectsData] = useState<any[]>([]);
+  const [lessonsData, setLessonsData] = useState<any[]>([]);
+  const [questionsCount, setQuestionsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Filters
+  const [timeRange, setTimeRange] = useState<TimeRange>("12m");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
   useEffect(() => {
-    loadReports();
+    loadRawData();
   }, []);
 
-  const loadReports = async () => {
-    const [payments, profiles, grades, subjects, lessons, questions, subscriptions] = await Promise.all([
-      supabase.from("payment_requests").select("amount, status, created_at").eq("status", "approved"),
-      supabase.from("profiles").select("created_at, governorate, school_name"),
-      supabase.from("grades").select("id, name"),
+  const loadRawData = async () => {
+    const [payments, profiles, gradesRes, subjects, lessons, questions, subscriptions] = await Promise.all([
+      supabase.from("payment_requests").select("amount, created_at").eq("status", "approved"),
+      supabase.from("profiles").select("created_at, governorate, school_name, grade_id"),
+      supabase.from("grades").select("id, name").order("sort_order"),
       supabase.from("subjects").select("id, grade_id"),
       supabase.from("lessons").select("id, subject_id"),
       supabase.from("questions").select("id", { count: "exact", head: true }),
-      supabase.from("subscriptions").select("status"),
+      supabase.from("subscriptions").select("status, user_id, created_at, grade_id"),
     ]);
 
-    // Monthly revenue + student growth (last 12 months)
+    setRawPayments((payments.data || []) as RawPayment[]);
+    setRawProfiles((profiles.data || []) as RawProfile[]);
+    setGrades((gradesRes.data || []) as Grade[]);
+    setSubjectsData(subjects.data || []);
+    setLessonsData(lessons.data || []);
+    setQuestionsCount(questions.count || 0);
+    setRawSubs((subscriptions.data || []) as RawSub[]);
+    setLoading(false);
+  };
+
+  // Compute cutoff date from timeRange
+  const cutoffDate = useMemo(() => {
+    const range = TIME_RANGES.find((r) => r.key === timeRange);
+    if (!range || range.months === 0) return null;
+    const d = new Date();
+    d.setMonth(d.getMonth() - range.months);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [timeRange]);
+
+  const inRange = (dateStr: string) => {
+    if (!cutoffDate) return true;
+    return new Date(dateStr) >= cutoffDate;
+  };
+
+  // Filtered data
+  const filteredProfiles = useMemo(() => {
+    let data = rawProfiles;
+    if (cutoffDate) data = data.filter((p) => inRange(p.created_at));
+    if (gradeFilter !== "all") data = data.filter((p) => p.grade_id === gradeFilter);
+    return data;
+  }, [rawProfiles, cutoffDate, gradeFilter]);
+
+  const filteredPayments = useMemo(() => {
+    if (!cutoffDate) return rawPayments;
+    return rawPayments.filter((p) => inRange(p.created_at));
+  }, [rawPayments, cutoffDate]);
+
+  const filteredSubs = useMemo(() => {
+    let data = rawSubs;
+    if (cutoffDate) data = data.filter((s) => inRange(s.created_at));
+    if (gradeFilter !== "all") data = data.filter((s) => s.grade_id === gradeFilter);
+    return data;
+  }, [rawSubs, cutoffDate, gradeFilter]);
+
+  // Monthly chart data
+  const monthlyData = useMemo(() => {
+    const range = TIME_RANGES.find((r) => r.key === timeRange);
+    const monthsBack = range?.months || 12;
     const now = new Date();
-    const monthly: MonthlyData[] = [];
-    for (let i = 11; i >= 0; i--) {
+    const data: MonthlyData[] = [];
+    for (let i = (monthsBack || 24) - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = `${MONTHS_AR[d.getMonth()]} ${d.getFullYear() % 100}`;
 
-      const rev = (payments.data || [])
-        .filter((p: any) => p.created_at?.startsWith(yearMonth))
-        .reduce((s: number, p: any) => s + Number(p.amount), 0);
+      const rev = filteredPayments
+        .filter((p) => p.created_at?.startsWith(yearMonth))
+        .reduce((s, p) => s + Number(p.amount), 0);
 
-      const stu = (profiles.data || [])
-        .filter((p: any) => p.created_at?.startsWith(yearMonth)).length;
+      const stu = filteredProfiles
+        .filter((p) => p.created_at?.startsWith(yearMonth)).length;
 
-      monthly.push({ month: label, revenue: rev, students: stu });
+      data.push({ month: label, revenue: rev, students: stu });
     }
-    setMonthlyData(monthly);
+    return data;
+  }, [filteredPayments, filteredProfiles, timeRange]);
 
-    // Content overview
-    setContentData([
-      { name: "الصفوف", count: grades.data?.length || 0 },
-      { name: "المواد", count: subjects.data?.length || 0 },
-      { name: "الدروس", count: lessons.data?.length || 0 },
-      { name: "الأسئلة", count: questions.count || 0 },
-    ]);
-
-    // Grade breakdown
-    const gradeBreakdown: GradeSubData[] = (grades.data || []).map((g: any) => {
-      const gradeSubjects = (subjects.data || []).filter((s: any) => s.grade_id === g.id);
-      const subjectIds = new Set(gradeSubjects.map((s: any) => s.id));
-      const gradeLessons = (lessons.data || []).filter((l: any) => subjectIds.has(l.subject_id));
-      return { grade: g.name, subjects: gradeSubjects.length, lessons: gradeLessons.length };
-    });
-    setGradeData(gradeBreakdown);
-
-    // Subscription status distribution
-    const statusCount: Record<string, number> = {};
-    (subscriptions.data || []).forEach((s: any) => {
-      statusCount[s.status] = (statusCount[s.status] || 0) + 1;
-    });
-    const statusLabels: Record<string, string> = { active: "نشط", pending: "معلق", expired: "منتهي" };
-    setSubStatusData(
-      Object.entries(statusCount).map(([k, v]) => ({ name: statusLabels[k] || k, value: v }))
-    );
-
-    // Governorate distribution
+  // Governorate data
+  const govData = useMemo(() => {
     const govCount: Record<string, number> = {};
-    (profiles.data || []).forEach((p: any) => {
+    filteredProfiles.forEach((p) => {
       const gov = p.governorate || "غير محدد";
       govCount[gov] = (govCount[gov] || 0) + 1;
     });
-    const govSorted = Object.entries(govCount)
+    return Object.entries(govCount)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
-    setGovData(govSorted);
+  }, [filteredProfiles]);
 
-    // School distribution (top 15)
+  // School data
+  const schoolData = useMemo(() => {
     const schoolCount: Record<string, { count: number; governorate: string }> = {};
-    (profiles.data || []).forEach((p: any) => {
+    filteredProfiles.forEach((p) => {
       if (p.school_name?.trim()) {
         const key = p.school_name.trim();
-        if (!schoolCount[key]) {
-          schoolCount[key] = { count: 0, governorate: p.governorate || "غير محدد" };
-        }
+        if (!schoolCount[key]) schoolCount[key] = { count: 0, governorate: p.governorate || "غير محدد" };
         schoolCount[key].count++;
       }
     });
-    const schoolSorted = Object.entries(schoolCount)
+    return Object.entries(schoolCount)
       .map(([name, { count, governorate }]) => ({ name, count, governorate }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
-    setSchoolData(schoolSorted);
+  }, [filteredProfiles]);
 
-    setLoading(false);
-  };
+  // Subscription status
+  const subStatusData = useMemo(() => {
+    const statusCount: Record<string, number> = {};
+    filteredSubs.forEach((s) => { statusCount[s.status] = (statusCount[s.status] || 0) + 1; });
+    const labels: Record<string, string> = { active: "نشط", pending: "معلق", expired: "منتهي" };
+    return Object.entries(statusCount).map(([k, v]) => ({ name: labels[k] || k, value: v }));
+  }, [filteredSubs]);
+
+  // Content data (not filtered by time/grade)
+  const contentData = useMemo(() => [
+    { name: "الصفوف", count: grades.length },
+    { name: "المواد", count: subjectsData.length },
+    { name: "الدروس", count: lessonsData.length },
+    { name: "الأسئلة", count: questionsCount },
+  ], [grades, subjectsData, lessonsData, questionsCount]);
+
+  // Grade breakdown (not filtered by grade)
+  const gradeData = useMemo(() =>
+    grades.map((g) => {
+      const gradeSubjects = subjectsData.filter((s: any) => s.grade_id === g.id);
+      const subjectIds = new Set(gradeSubjects.map((s: any) => s.id));
+      const gradeLessons = lessonsData.filter((l: any) => subjectIds.has(l.subject_id));
+      return { grade: g.name, subjects: gradeSubjects.length, lessons: gradeLessons.length };
+    }),
+  [grades, subjectsData, lessonsData]);
+
+  const activeFiltersCount = [timeRange !== "12m", gradeFilter !== "all"].filter(Boolean).length;
 
   if (loading) {
     return (
@@ -136,21 +211,104 @@ const AdminReports = () => {
   }
 
   const totalRevenue = monthlyData.reduce((s, m) => s + m.revenue, 0);
-  const totalStudents = monthlyData.reduce((s, m) => s + m.students, 0);
+  const totalStudents = filteredProfiles.length;
   const totalContent = contentData.reduce((s, c) => s + c.count, 0);
   const govWithData = govData.filter((g) => g.name !== "غير محدد").length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-bold text-foreground">التقارير والإحصائيات</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          <h1 className="text-xl font-bold text-foreground">التقارير والإحصائيات</h1>
+        </div>
+        <Button
+          variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="gap-1.5 relative"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          فلاتر التقارير
+          {activeFiltersCount > 0 && (
+            <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full mr-1">
+              {activeFiltersCount}
+            </Badge>
+          )}
+        </Button>
       </div>
+
+      {/* Filters Bar */}
+      {showFilters && (
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <Label className="mb-1.5 block text-sm">الفترة الزمنية</Label>
+              <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_RANGES.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-sm">الصف الدراسي</Label>
+              <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الصفوف</SelectItem>
+                  {grades.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => { setTimeRange("12m"); setGradeFilter("all"); }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  مسح الفلاتر
+                </Button>
+              )}
+            </div>
+          </div>
+          {activeFiltersCount > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {timeRange !== "12m" && (
+                <Badge variant="outline" className="gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {TIME_RANGES.find((r) => r.key === timeRange)?.label}
+                </Badge>
+              )}
+              {gradeFilter !== "all" && (
+                <Badge variant="outline" className="gap-1">
+                  <GraduationCap className="h-3 w-3" />
+                  {grades.find((g) => g.id === gradeFilter)?.name}
+                </Badge>
+              )}
+              <Badge variant="secondary" className="text-xs">
+                {totalStudents} طالب مطابق
+              </Badge>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard icon={DollarSign} label="إجمالي الإيرادات" value={`${totalRevenue.toLocaleString("ar-YE")} ر.ي`} color="text-accent" bg="bg-accent/10" />
-        <SummaryCard icon={Users} label="إجمالي التسجيلات" value={totalStudents} color="text-primary" bg="bg-primary/10" />
+        <SummaryCard icon={Users} label="عدد الطلاب" value={totalStudents} color="text-primary" bg="bg-primary/10" />
         <SummaryCard icon={BookOpen} label="إجمالي المحتوى" value={totalContent} color="text-success" bg="bg-success/10" />
         <SummaryCard icon={MapPin} label="محافظات مسجلة" value={govWithData} color="text-destructive" bg="bg-destructive/10" />
       </div>
@@ -253,7 +411,6 @@ const AdminReports = () => {
 
       {/* Content + Subscriptions row */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Content Pie */}
         <ChartCard title="توزيع المحتوى التعليمي" icon={<FileText className="h-4 w-4 text-success" />}>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
@@ -267,7 +424,6 @@ const AdminReports = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Subscription Status Pie */}
         <ChartCard title="توزيع حالات الاشتراكات" icon={<Calendar className="h-4 w-4 text-primary" />}>
           {subStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
