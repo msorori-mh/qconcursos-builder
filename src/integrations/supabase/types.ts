@@ -731,6 +731,33 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_schedule: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          period_number: number
+          subject_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          period_number: number
+          subject_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          period_number?: number
+          subject_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
