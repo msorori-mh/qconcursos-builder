@@ -219,6 +219,37 @@ const AdminReports = () => {
 
   const activeFiltersCount = [timeRange !== "12m", gradeFilter !== "all"].filter(Boolean).length;
 
+  const exportGovReport = () => {
+    if (!govData.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+    downloadCSV("governorate-report.csv", ["المحافظة", "عدد الطلاب"], govData.map((g) => [g.name, String(g.count)]));
+    toast({ title: "تم تصدير تقرير المحافظات" });
+  };
+
+  const exportSchoolReport = () => {
+    if (!schoolData.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+    downloadCSV("school-report.csv", ["المدرسة", "المحافظة", "عدد الطلاب"], schoolData.map((s) => [s.name, s.governorate, String(s.count)]));
+    toast({ title: "تم تصدير تقرير المدارس" });
+  };
+
+  const exportRevenueReport = () => {
+    if (!monthlyData.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+    downloadCSV("revenue-report.csv", ["الشهر", "الإيرادات", "الطلاب الجدد"], monthlyData.map((m) => [m.month, String(m.revenue), String(m.students)]));
+    toast({ title: "تم تصدير تقرير الإيرادات" });
+  };
+
+  const exportSubscriptionsReport = () => {
+    if (!subStatusData.length) { toast({ title: "لا توجد بيانات للتصدير" }); return; }
+    downloadCSV("subscriptions-report.csv", ["الحالة", "العدد"], subStatusData.map((s) => [s.name, String(s.value)]));
+    toast({ title: "تم تصدير تقرير الاشتراكات" });
+  };
+
+  const exportAllReports = () => {
+    exportGovReport();
+    exportSchoolReport();
+    exportRevenueReport();
+    exportSubscriptionsReport();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -239,15 +270,31 @@ const AdminReports = () => {
           <TrendingUp className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-bold text-foreground">التقارير والإحصائيات</h1>
         </div>
-        <Button
-          variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="gap-1.5 relative"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          فلاتر التقارير
-          {activeFiltersCount > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Download className="h-3.5 w-3.5" />
+                تصدير التقارير
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportAllReports}>تصدير الكل (CSV)</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportGovReport}>تقرير المحافظات</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportSchoolReport}>تقرير المدارس</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportRevenueReport}>تقرير الإيرادات والنمو</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportSubscriptionsReport}>تقرير الاشتراكات</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-1.5 relative"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            فلاتر التقارير
+            {activeFiltersCount > 0 && (
             <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full mr-1">
               {activeFiltersCount}
             </Badge>
