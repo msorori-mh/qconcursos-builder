@@ -479,7 +479,10 @@ const AdminQuestions = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => exportQuestions("csv")} disabled={exporting} className="gap-1.5">
-            <Download className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير CSV"}
+            <Download className="h-4 w-4" /> تصدير CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportQuestions("xlsx")} disabled={exporting} className="gap-1.5">
+            <FileSpreadsheet className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير Excel"}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
