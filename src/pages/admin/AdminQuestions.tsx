@@ -379,7 +379,6 @@ const AdminQuestions = () => {
   const exportQuestions = async (format: "csv" | "xlsx") => {
     setExporting(true);
     try {
-      // Build query with current filters
       let query = supabase
         .from("questions")
         .select("*, lessons(title), subjects(name)")
@@ -406,25 +405,13 @@ const AdminQuestions = () => {
 
       const arabicLabels = ["أ", "ب", "ت", "ث"];
       const headers = ["السؤال", "الخيار 1", "الخيار 2", "الخيار 3", "الخيار 4", "الإجابة الصحيحة", "الشرح", "المادة", "الدرس", "النوع", "الوحدة", "الفصل", "السنة"];
-
-      const escapeCSV = (val: string) => {
-        if (!val) return "";
-        if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-          return '"' + val.replace(/"/g, '""') + '"';
-        }
-        return val;
-      };
-
       const typeLabels: Record<string, string> = { lesson: "سؤال درس", exam: "اختبار شامل", bank: "بنك أسئلة" };
 
       const rows = data.map((q: any) => {
         const opts = Array.isArray(q.options) ? q.options : [];
         return [
           q.question_text || "",
-          opts[0] || "",
-          opts[1] || "",
-          opts[2] || "",
-          opts[3] || "",
+          opts[0] || "", opts[1] || "", opts[2] || "", opts[3] || "",
           arabicLabels[q.correct_index] || String(q.correct_index + 1),
           q.explanation || "",
           q.subjects?.name || "",
@@ -436,23 +423,44 @@ const AdminQuestions = () => {
         ];
       });
 
-      const bom = "\uFEFF";
-      const csvContent = bom + [headers, ...rows].map(r => r.map(escapeCSV).join(",")).join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const filterLabel = filterSubject
         ? allSubjects.find(s => s.id === filterSubject)?.name || "أسئلة"
         : filterGrade
           ? grades.find(g => g.id === filterGrade)?.name || "أسئلة"
           : "جميع_الأسئلة";
-      a.download = `${filterLabel}_${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const fileName = `${filterLabel}_${new Date().toISOString().slice(0, 10)}`;
 
-      toast({ title: `تم تصدير ${data.length} سؤال بنجاح` });
+      if (format === "xlsx") {
+        const XLSX = await import("xlsx");
+        const wsData = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Style: set column widths
+        ws["!cols"] = headers.map((h) => ({ wch: h === "السؤال" || h === "الشرح" ? 40 : 18 }));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "الأسئلة");
+        XLSX.writeFile(wb, `${fileName}.xlsx`);
+      } else {
+        const escapeCSV = (val: string) => {
+          if (!val) return "";
+          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+            return '"' + val.replace(/"/g, '""') + '"';
+          }
+          return val;
+        };
+        const bom = "\uFEFF";
+        const csvContent = bom + [headers, ...rows].map(r => r.map(escapeCSV).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${fileName}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({ title: `تم تصدير ${data.length} سؤال بصيغة ${format.toUpperCase()} بنجاح` });
     } catch (e: any) {
       toast({ title: "خطأ في التصدير", description: e.message, variant: "destructive" });
     } finally {
@@ -471,7 +479,10 @@ const AdminQuestions = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => exportQuestions("csv")} disabled={exporting} className="gap-1.5">
-            <Download className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير CSV"}
+            <Download className="h-4 w-4" /> تصدير CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportQuestions("xlsx")} disabled={exporting} className="gap-1.5">
+            <FileSpreadsheet className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير Excel"}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
