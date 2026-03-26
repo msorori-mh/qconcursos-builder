@@ -430,7 +430,7 @@ const LessonPage = () => {
             <div className="space-y-6">
               {/* AI Summary */}
               <Suspense fallback={null}>
-                <AiLessonSummary lessonTitle={lesson.title} lessonContent={lesson.content_text} />
+                <AiLessonSummary lessonId={lesson.id} lessonTitle={lesson.title} lessonContent={lesson.content_text} />
               </Suspense>
               {lesson.content_text && <TextContent text={lesson.content_text} />}
               {lesson.content_pdf_url && <PdfViewer url={lesson.content_pdf_url} />}

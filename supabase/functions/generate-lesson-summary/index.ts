@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { lessonTitle, lessonContent } = await req.json();
+    const { lessonTitle, lessonContent, lessonId, regenerate } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -20,12 +20,12 @@ serve(async (req) => {
       });
     }
 
-    // Get user for logging
-    const authHeader = req.headers.get("authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-    
+    const serviceClient = createClient(supabaseUrl, serviceKey);
+
+    // Get user for logging
+    const authHeader = req.headers.get("authorization");
     let userId: string | null = null;
     if (authHeader) {
       const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -33,6 +33,24 @@ serve(async (req) => {
       });
       const { data: { user } } = await anonClient.auth.getUser();
       userId = user?.id ?? null;
+    }
+
+    // Check cache first (unless regenerate requested)
+    if (lessonId && !regenerate) {
+      const { data: cached } = await serviceClient
+        .from("lesson_summaries")
+        .select("summary, key_points, study_tip")
+        .eq("lesson_id", lessonId)
+        .maybeSingle();
+
+      if (cached) {
+        return new Response(JSON.stringify({
+          summary: cached.summary,
+          keyPoints: cached.key_points,
+          studyTip: cached.study_tip,
+          cached: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     const systemPrompt = `أنت مساعد تعليمي متخصص في تلخيص الدروس لطلاب المدارس في اليمن.
@@ -80,7 +98,7 @@ serve(async (req) => {
 
     // Log AI usage
     if (userId) {
-      supabase.from("ai_usage_logs").insert({
+      serviceClient.from("ai_usage_logs").insert({
         user_id: userId,
         feature: "lesson_summary",
         model,
@@ -115,7 +133,18 @@ serve(async (req) => {
       parsed = { summary: content, keyPoints: [], studyTip: "" };
     }
 
-    return new Response(JSON.stringify(parsed), {
+    // Cache the result
+    if (lessonId) {
+      serviceClient.from("lesson_summaries").upsert({
+        lesson_id: lessonId,
+        summary: parsed.summary || "",
+        key_points: parsed.keyPoints || [],
+        study_tip: parsed.studyTip || "",
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "lesson_id" }).then(() => {});
+    }
+
+    return new Response(JSON.stringify({ ...parsed, cached: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

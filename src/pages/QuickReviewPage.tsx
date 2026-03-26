@@ -70,7 +70,7 @@ const LessonSummaryCard = ({
       {expanded && (
         <div className="mt-3">
           <Suspense fallback={<div className="flex justify-center py-4"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
-            <AiLessonSummary lessonTitle={lesson.title} lessonContent={lesson.content_text} />
+            <AiLessonSummary lessonId={lesson.id} lessonTitle={lesson.title} lessonContent={lesson.content_text} />
           </Suspense>
         </div>
       )}

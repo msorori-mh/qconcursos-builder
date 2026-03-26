@@ -307,6 +307,44 @@ export type Database = {
           },
         ]
       }
+      lesson_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          key_points: Json
+          lesson_id: string
+          study_tip: string | null
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_points?: Json
+          lesson_id: string
+          study_tip?: string | null
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_points?: Json
+          lesson_id?: string
+          study_tip?: string | null
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_summaries_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           content_pdf_url: string | null
