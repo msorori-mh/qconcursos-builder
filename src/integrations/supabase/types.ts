@@ -545,6 +545,8 @@ export type Database = {
           governorate: string | null
           grade_id: string | null
           id: string
+          parent_email: string | null
+          parent_phone: string | null
           phone: string | null
           referral_code: string | null
           referred_by: string | null
@@ -559,6 +561,8 @@ export type Database = {
           governorate?: string | null
           grade_id?: string | null
           id?: string
+          parent_email?: string | null
+          parent_phone?: string | null
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -573,6 +577,8 @@ export type Database = {
           governorate?: string | null
           grade_id?: string | null
           id?: string
+          parent_email?: string | null
+          parent_phone?: string | null
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
