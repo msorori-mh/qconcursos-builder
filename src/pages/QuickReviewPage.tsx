@@ -210,8 +210,7 @@ const QuickReviewPage = () => {
           title={`مراجعة سريعة — ${subject?.name || ""}`}
           subtitle={`${reviewQuestions.length} سؤال مختار للمراجعة`}
           durationMinutes={0}
-          showInstantFeedback
-          onComplete={() => setStartQuiz(false)}
+          practiceMode
           onExit={() => setStartQuiz(false)}
         />
       </div>
