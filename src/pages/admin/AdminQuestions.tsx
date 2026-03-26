@@ -328,10 +328,10 @@ const AdminQuestions = () => {
           correct_index: correctIndex,
           explanation: findCol(row, colMap.explanation) || null,
           unit: findCol(row, colMap.unit) || null,
-          subject_id: filterSubject || null,
-          lesson_id: filterLesson || null,
-          semester: filterSemester ? parseInt(filterSemester) : null,
-          question_type: filterType || "lesson",
+          subject_id: importSubject || null,
+          lesson_id: importLesson || null,
+          semester: importSemester ? parseInt(importSemester) : null,
+          question_type: importType || "lesson",
           sort_order: 0,
         });
       }
