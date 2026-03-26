@@ -222,8 +222,20 @@ const AdminQuestions = () => {
 
   const parseExcelPreview = async (file: File) => {
     try {
-      const text = await file.text();
-      const rows = text.split("\n").map(r => r.split(/[,\t]/).map(c => c.replace(/^"|"$/g, "").trim()));
+      let rows: string[][] = [];
+
+      if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        const XLSX = await import("xlsx");
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        rows = jsonData.map(r => r.map(c => String(c).trim()));
+      } else {
+        const text = await file.text();
+        rows = text.split("\n").map(r => r.split(/[,\t]/).map(c => c.replace(/^"|"$/g, "").trim()));
+      }
+
       if (rows.length < 2) {
         toast({ title: "الملف فارغ أو لا يحتوي على بيانات كافية", variant: "destructive" });
         return;
@@ -234,7 +246,7 @@ const AdminQuestions = () => {
         headers.forEach((h, i) => { obj[h] = row[i] || ""; });
         return obj;
       });
-      setImportPreview(preview.slice(0, 100)); // Preview first 100
+      setImportPreview(preview.slice(0, 100));
     } catch {
       toast({ title: "خطأ في قراءة الملف", variant: "destructive" });
     }
@@ -702,9 +714,9 @@ const AdminQuestions = () => {
                     <p className="text-sm font-medium text-foreground">
                       {importFile ? importFile.name : "اضغط لرفع ملف CSV أو TXT"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">يدعم ملفات CSV و TXT مفصولة بفواصل أو Tab</p>
+                    <p className="text-xs text-muted-foreground mt-1">يدعم ملفات Excel (.xlsx) و CSV و TXT</p>
                   </div>
-                  <input type="file" accept=".csv,.txt,.tsv" onChange={handleFileChange} className="hidden" />
+                  <input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls" onChange={handleFileChange} className="hidden" />
                 </label>
               </div>
               <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1.5">
