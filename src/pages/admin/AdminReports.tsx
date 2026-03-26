@@ -543,12 +543,20 @@ const SummaryCard = ({ icon: Icon, label, value, color, bg }: { icon: any; label
   </div>
 );
 
-const ChartCard = ({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) => (
+const ChartCard = ({ title, icon, children, onExport }: { title: string; icon: React.ReactNode; children: React.ReactNode; onExport?: () => void }) => (
   <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-    <h2 className="mb-4 text-sm font-bold text-card-foreground flex items-center gap-2">
-      {icon}
-      {title}
-    </h2>
+    <div className="mb-4 flex items-center justify-between">
+      <h2 className="text-sm font-bold text-card-foreground flex items-center gap-2">
+        {icon}
+        {title}
+      </h2>
+      {onExport && (
+        <Button variant="ghost" size="sm" onClick={onExport} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Download className="h-3.5 w-3.5" />
+          تصدير
+        </Button>
+      )}
+    </div>
     {children}
   </div>
 );
