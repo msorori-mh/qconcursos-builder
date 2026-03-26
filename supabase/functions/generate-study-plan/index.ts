@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,9 +15,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    const serviceClient = createClient(supabaseUrl, serviceKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
@@ -25,7 +27,6 @@ serve(async (req) => {
     const { dayOfWeek } = await req.json();
     const targetDay = dayOfWeek ?? new Date().getDay();
 
-    // Fetch today's schedule
     const { data: schedule } = await supabase
       .from("weekly_schedule")
       .select("*")
@@ -40,14 +41,12 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch student's profile for grade context
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name, grade_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Fetch student progress for context
     const { data: progress } = await supabase
       .from("user_progress")
       .select("lesson_id, completed, quiz_score")
@@ -98,6 +97,7 @@ serve(async (req) => {
   "examSuggestion": "اقتراح اختبار تجريبي إن وجد"
 }`;
 
+    const model = "google/gemini-2.5-flash";
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -105,7 +105,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -113,6 +113,15 @@ serve(async (req) => {
         temperature: 0.7,
       }),
     });
+
+    // Log AI usage
+    serviceClient.from("ai_usage_logs").insert({
+      user_id: user.id,
+      feature: "study_plan",
+      model,
+      success: response.ok,
+      error_message: response.ok ? null : `HTTP ${response.status}`,
+    }).then(() => {});
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -131,7 +140,6 @@ serve(async (req) => {
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content ?? "";
 
-    // Parse JSON from AI response (handle markdown code blocks)
     let plan;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
