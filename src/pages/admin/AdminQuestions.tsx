@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Plus, Pencil, Trash2, Search, Upload, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,12 +19,16 @@ interface Question {
   subject_id: string | null;
   question_type: string | null;
   sort_order: number;
+  unit: string | null;
+  semester: number | null;
+  year: number | null;
   lessons?: { title: string } | null;
   subjects?: { name: string } | null;
 }
 
-interface Lesson { id: string; title: string; subjects?: { name: string; grades?: { name: string } } }
-interface Subject { id: string; name: string; }
+interface Grade { id: string; name: string; }
+interface Subject { id: string; name: string; grade_id: string; semester: number | null; }
+interface Lesson { id: string; title: string; subject_id: string; semester: number | null; }
 
 const PAGE_SIZE = 20;
 
@@ -36,33 +40,52 @@ const QUESTION_TYPES = [
 
 const emptyForm = {
   question_text: "", options: ["", "", "", ""], correct_index: 0,
-  explanation: "", lesson_id: "", subject_id: "", question_type: "lesson", sort_order: 0,
+  explanation: "", lesson_id: "", subject_id: "", question_type: "lesson",
+  sort_order: 0, unit: "", semester: "" as string, year: "" as string,
 };
 
 const AdminQuestions = () => {
   const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Filters
   const [filterType, setFilterType] = useState("");
+  const [filterGrade, setFilterGrade] = useState("");
+  const [filterSubject, setFilterSubject] = useState("");
+  const [filterSemester, setFilterSemester] = useState("");
+  const [filterLesson, setFilterLesson] = useState("");
+
+  // Form cascading
+  const [formGrade, setFormGrade] = useState("");
+
+  // Import
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<any[] | null>(null);
 
   useEffect(() => { loadRefs(); }, []);
-  useEffect(() => { loadQuestions(); }, [page, searchTerm, filterType]);
+  useEffect(() => { loadQuestions(); }, [page, searchTerm, filterType, filterGrade, filterSubject, filterSemester, filterLesson]);
 
   const loadRefs = async () => {
-    const [{ data: lData }, { data: sData }] = await Promise.all([
-      supabase.from("lessons").select("id, title, subjects(name, grades(name))").order("sort_order"),
-      supabase.from("subjects").select("id, name").order("sort_order"),
+    const [{ data: gData }, { data: sData }, { data: lData }] = await Promise.all([
+      supabase.from("grades").select("id, name").order("sort_order"),
+      supabase.from("subjects").select("id, name, grade_id, semester").order("sort_order"),
+      supabase.from("lessons").select("id, title, subject_id, semester").order("sort_order"),
     ]);
-    if (lData) setLessons(lData as any);
-    if (sData) setSubjects(sData);
+    if (gData) setGrades(gData);
+    if (sData) setAllSubjects(sData as Subject[]);
+    if (lData) setAllLessons(lData as Lesson[]);
   };
 
   const loadQuestions = async () => {
@@ -78,24 +101,56 @@ const AdminQuestions = () => {
 
     if (searchTerm.trim()) query = query.ilike("question_text", `%${searchTerm.trim()}%`);
     if (filterType) query = query.eq("question_type", filterType);
+    if (filterSubject) query = query.eq("subject_id", filterSubject);
+    if (filterLesson) query = query.eq("lesson_id", filterLesson);
+    if (filterSemester) query = query.eq("semester", parseInt(filterSemester));
+
+    // Grade filter: get subject IDs for that grade
+    if (filterGrade && !filterSubject) {
+      const gradeSubjectIds = allSubjects.filter(s => s.grade_id === filterGrade).map(s => s.id);
+      if (gradeSubjectIds.length > 0) query = query.in("subject_id", gradeSubjectIds);
+      else query = query.eq("subject_id", "00000000-0000-0000-0000-000000000000"); // no results
+    }
 
     const { data, count } = await query;
-
     if (data) setQuestions(data as any);
     setTotalCount(count || 0);
     setLoading(false);
   };
 
+  // Cascading helpers
+  const filteredSubjects = filterGrade
+    ? allSubjects.filter(s => s.grade_id === filterGrade)
+    : allSubjects;
+  const filteredLessons = filterSubject
+    ? allLessons.filter(l => l.subject_id === filterSubject)
+    : filterGrade
+      ? allLessons.filter(l => filteredSubjects.some(s => s.id === l.subject_id))
+      : allLessons;
+
+  const formSubjects = formGrade
+    ? allSubjects.filter(s => s.grade_id === formGrade)
+    : allSubjects;
+  const formLessons = form.subject_id
+    ? allLessons.filter(l => l.subject_id === form.subject_id)
+    : formGrade
+      ? allLessons.filter(l => formSubjects.some(s => s.id === l.subject_id))
+      : allLessons;
+
   const openNew = () => {
     setEditing(null);
     setForm({ ...emptyForm });
+    setFormGrade("");
     setDialogOpen(true);
   };
 
   const openEdit = (q: Question) => {
     setEditing(q);
-    const opts = Array.isArray(q.options) ? q.options : ["", "", "", ""];
+    const opts = Array.isArray(q.options) ? [...q.options] : ["", "", "", ""];
     while (opts.length < 4) opts.push("");
+    // Find grade from subject
+    const subj = allSubjects.find(s => s.id === q.subject_id);
+    setFormGrade(subj?.grade_id || "");
     setForm({
       question_text: q.question_text,
       options: opts as string[],
@@ -105,6 +160,9 @@ const AdminQuestions = () => {
       subject_id: q.subject_id || "",
       question_type: q.question_type || "lesson",
       sort_order: q.sort_order,
+      unit: q.unit || "",
+      semester: q.semester?.toString() || "",
+      year: q.year?.toString() || "",
     });
     setDialogOpen(true);
   };
@@ -115,7 +173,7 @@ const AdminQuestions = () => {
       return;
     }
     const filteredOptions = form.options.filter(Boolean);
-    const payload = {
+    const payload: any = {
       question_text: form.question_text,
       options: filteredOptions,
       correct_index: form.correct_index,
@@ -124,6 +182,9 @@ const AdminQuestions = () => {
       subject_id: form.subject_id || null,
       question_type: form.question_type,
       sort_order: form.sort_order,
+      unit: form.unit || null,
+      semester: form.semester ? parseInt(form.semester) : null,
+      year: form.year ? parseInt(form.year) : null,
     };
     if (editing) {
       const { error } = await supabase.from("questions").update(payload).eq("id", editing.id);
@@ -150,37 +211,222 @@ const AdminQuestions = () => {
     setForm({ ...form, options: opts });
   };
 
+  // ─── Excel Import ───
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportPreview(null);
+    parseExcelPreview(file);
+  };
+
+  const parseExcelPreview = async (file: File) => {
+    try {
+      const text = await file.text();
+      const rows = text.split("\n").map(r => r.split(/[,\t]/).map(c => c.replace(/^"|"$/g, "").trim()));
+      if (rows.length < 2) {
+        toast({ title: "الملف فارغ أو لا يحتوي على بيانات كافية", variant: "destructive" });
+        return;
+      }
+      const headers = rows[0].map(h => h.toLowerCase().trim());
+      const preview = rows.slice(1).filter(r => r.some(c => c)).map(row => {
+        const obj: any = {};
+        headers.forEach((h, i) => { obj[h] = row[i] || ""; });
+        return obj;
+      });
+      setImportPreview(preview.slice(0, 100)); // Preview first 100
+    } catch {
+      toast({ title: "خطأ في قراءة الملف", variant: "destructive" });
+    }
+  };
+
+  const processImport = async () => {
+    if (!importPreview?.length) return;
+    setImporting(true);
+
+    try {
+      // Map column names (Arabic or English)
+      const colMap: Record<string, string[]> = {
+        question_text: ["السؤال", "نص السؤال", "question", "question_text"],
+        option1: ["الخيار 1", "الخيار الاول", "خيار 1", "option1", "option_1", "a"],
+        option2: ["الخيار 2", "الخيار الثاني", "خيار 2", "option2", "option_2", "b"],
+        option3: ["الخيار 3", "الخيار الثالث", "خيار 3", "option3", "option_3", "c"],
+        option4: ["الخيار 4", "الخيار الرابع", "خيار 4", "option4", "option_4", "d"],
+        correct: ["الإجابة الصحيحة", "الاجابة", "الإجابة", "correct", "correct_index", "answer"],
+        explanation: ["الشرح", "التوضيح", "explanation"],
+        unit: ["الوحدة", "unit"],
+      };
+
+      const findCol = (row: any, keys: string[]) => {
+        for (const k of keys) {
+          const found = Object.keys(row).find(rk => rk === k || rk.includes(k));
+          if (found && row[found]) return row[found];
+        }
+        return "";
+      };
+
+      const questionsToInsert: any[] = [];
+      let skipped = 0;
+
+      for (const row of importPreview) {
+        const qText = findCol(row, colMap.question_text);
+        if (!qText) { skipped++; continue; }
+
+        const opts = [
+          findCol(row, colMap.option1),
+          findCol(row, colMap.option2),
+          findCol(row, colMap.option3),
+          findCol(row, colMap.option4),
+        ].filter(Boolean);
+
+        if (opts.length < 2) { skipped++; continue; }
+
+        // Determine correct index
+        let correctIndex = 0;
+        const correctVal = findCol(row, colMap.correct);
+        if (correctVal) {
+          // Check if it's a number (1-based index)
+          const num = parseInt(correctVal);
+          if (!isNaN(num) && num >= 1 && num <= opts.length) {
+            correctIndex = num - 1;
+          } else {
+            // Check Arabic letters
+            const letterMap: Record<string, number> = { "أ": 0, "ا": 0, "ب": 1, "ت": 2, "ث": 3, "a": 0, "b": 1, "c": 2, "d": 3 };
+            const idx = letterMap[correctVal.trim().toLowerCase()];
+            if (idx !== undefined) correctIndex = idx;
+            else {
+              // Try matching option text
+              const matchIdx = opts.findIndex(o => o === correctVal.trim());
+              if (matchIdx >= 0) correctIndex = matchIdx;
+            }
+          }
+        }
+
+        questionsToInsert.push({
+          question_text: qText,
+          options: opts,
+          correct_index: correctIndex,
+          explanation: findCol(row, colMap.explanation) || null,
+          unit: findCol(row, colMap.unit) || null,
+          subject_id: filterSubject || null,
+          lesson_id: filterLesson || null,
+          semester: filterSemester ? parseInt(filterSemester) : null,
+          question_type: filterType || "lesson",
+          sort_order: 0,
+        });
+      }
+
+      if (questionsToInsert.length === 0) {
+        toast({ title: "لم يتم العثور على أسئلة صالحة في الملف", variant: "destructive" });
+        setImporting(false);
+        return;
+      }
+
+      // Insert in batches of 50
+      let inserted = 0;
+      for (let i = 0; i < questionsToInsert.length; i += 50) {
+        const batch = questionsToInsert.slice(i, i + 50);
+        const { error } = await supabase.from("questions").insert(batch);
+        if (error) {
+          toast({ title: "خطأ في الاستيراد", description: error.message, variant: "destructive" });
+          break;
+        }
+        inserted += batch.length;
+      }
+
+      toast({
+        title: `تم استيراد ${inserted} سؤال`,
+        description: skipped > 0 ? `تم تخطي ${skipped} صف غير صالح` : undefined,
+      });
+      setImportDialogOpen(false);
+      setImportFile(null);
+      setImportPreview(null);
+      loadQuestions();
+    } catch (e: any) {
+      toast({ title: "خطأ في الاستيراد", description: e.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const bom = "\uFEFF";
+    const csv = bom + "السؤال,الخيار 1,الخيار 2,الخيار 3,الخيار 4,الإجابة الصحيحة,الشرح,الوحدة\n" +
+      "ما عاصمة اليمن؟,صنعاء,عدن,تعز,حضرموت,1,صنعاء هي العاصمة الرسمية,الوحدة الأولى\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "questions_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">إدارة الأسئلة</h1>
           <p className="text-sm text-muted-foreground">{totalCount} سؤال</p>
         </div>
-        <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
-          <Plus className="h-4 w-4" /> إضافة سؤال
-        </Button>
-      </div>
-
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-            placeholder="ابحث في الأسئلة..."
-            className="pr-9"
-          />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
+            <Upload className="h-4 w-4" /> استيراد
+          </Button>
+          <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
+            <Plus className="h-4 w-4" /> إضافة سؤال
+          </Button>
         </div>
-        <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-          <option value="">كل الأنواع</option>
-          {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
       </div>
 
+      {/* Filters */}
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+              placeholder="ابحث في الأسئلة..."
+              className="pr-9"
+            />
+          </div>
+          <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">كل الأنواع</option>
+            {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <select value={filterSemester} onChange={(e) => { setFilterSemester(e.target.value); setPage(1); }}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">كل الفصول</option>
+            <option value="1">الفصل الأول</option>
+            <option value="2">الفصل الثاني</option>
+          </select>
+          <select value={filterGrade} onChange={(e) => {
+            setFilterGrade(e.target.value); setFilterSubject(""); setFilterLesson(""); setPage(1);
+          }} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">كل الصفوف</option>
+            {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <select value={filterSubject} onChange={(e) => {
+            setFilterSubject(e.target.value); setFilterLesson(""); setPage(1);
+          }} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">كل المواد</option>
+            {filteredSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={filterLesson} onChange={(e) => { setFilterLesson(e.target.value); setPage(1); }}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="">كل الدروس</option>
+            {filteredLessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Questions List */}
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -196,13 +442,25 @@ const AdminQuestions = () => {
               <div key={q.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-card-foreground line-clamp-2">{q.question_text}</p>
-                   <p className="text-sm text-muted-foreground mt-1">
-                    {q.lessons?.title || q.subjects?.name || "عام"}
-                    {" • "}{(q.options as string[]).length} خيارات
-                    {" • "}{QUESTION_TYPES.find(t => t.value === q.question_type)?.label || "سؤال درس"}
-                  </p>
+                  <div className="flex flex-wrap gap-2 mt-1.5">
+                    {q.lessons?.title && (
+                      <span className="text-[11px] bg-primary/10 text-primary rounded-full px-2 py-0.5">{q.lessons.title}</span>
+                    )}
+                    {q.subjects?.name && (
+                      <span className="text-[11px] bg-accent/10 text-accent rounded-full px-2 py-0.5">{q.subjects.name}</span>
+                    )}
+                    {q.unit && (
+                      <span className="text-[11px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">{q.unit}</span>
+                    )}
+                    {q.semester && (
+                      <span className="text-[11px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">ف{q.semester}</span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      {QUESTION_TYPES.find(t => t.value === q.question_type)?.label || "سؤال درس"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex gap-2 mr-3">
+                <div className="flex gap-2 mr-3 shrink-0">
                   <Button variant="outline" size="icon" onClick={() => openEdit(q)}><Pencil className="h-4 w-4" /></Button>
                   <Button variant="outline" size="icon" onClick={() => remove(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
@@ -213,6 +471,7 @@ const AdminQuestions = () => {
         </>
       )}
 
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -242,12 +501,43 @@ const AdminQuestions = () => {
               <textarea value={form.explanation} onChange={(e) => setForm({ ...form, explanation: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={2} />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">نوع السؤال</label>
-              <select value={form.question_type} onChange={(e) => setForm({ ...form, question_type: e.target.value })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">نوع السؤال</label>
+                <select value={form.question_type} onChange={(e) => setForm({ ...form, question_type: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">الفصل الدراسي</label>
+                <select value={form.semester} onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">بدون تحديد</option>
+                  <option value="1">الفصل الأول</option>
+                  <option value="2">الفصل الثاني</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">الصف</label>
+                <select value={formGrade} onChange={(e) => {
+                  setFormGrade(e.target.value);
+                  setForm({ ...form, subject_id: "", lesson_id: "" });
+                }} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">اختر الصف</option>
+                  {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">المادة</label>
+                <select value={form.subject_id} onChange={(e) => setForm({ ...form, subject_id: e.target.value, lesson_id: "" })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">بدون مادة</option>
+                  {formSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {form.question_type === "lesson" && (
@@ -256,20 +546,132 @@ const AdminQuestions = () => {
                   <select value={form.lesson_id} onChange={(e) => setForm({ ...form, lesson_id: e.target.value })}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="">بدون درس</option>
-                    {lessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
+                    {formLessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-sm font-medium">المادة</label>
-                <select value={form.subject_id} onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <label className="mb-1 block text-sm font-medium">الوحدة</label>
+                <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="مثال: الوحدة الأولى" />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">السنة (اختياري)</label>
+              <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="مثال: 2024" />
+            </div>
+            <Button variant="hero" className="w-full" onClick={save}>{editing ? "حفظ" : "إضافة"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              استيراد الأسئلة من ملف
+            </DialogTitle>
+            <DialogDescription>ارفع ملف CSV أو TXT يحتوي على الأسئلة والإجابات</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Target filters */}
+            <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">إضافة الأسئلة المستوردة إلى:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <select value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">بدون فصل</option>
+                  <option value="1">الفصل الأول</option>
+                  <option value="2">الفصل الثاني</option>
+                </select>
+                <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+                <select value={filterSubject} onChange={(e) => { setFilterSubject(e.target.value); setFilterLesson(""); }}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">بدون مادة</option>
-                  {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {allSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <select value={filterLesson} onChange={(e) => setFilterLesson(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">بدون درس</option>
+                  {(filterSubject ? allLessons.filter(l => l.subject_id === filterSubject) : allLessons).map((l) => (
+                    <option key={l.id} value={l.id}>{l.title}</option>
+                  ))}
                 </select>
               </div>
             </div>
-            <Button variant="hero" className="w-full" onClick={save}>{editing ? "حفظ" : "إضافة"}</Button>
+
+            {/* File upload */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <label className="flex-1 cursor-pointer">
+                  <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-6 text-center transition-colors hover:border-primary/50">
+                    <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <p className="text-sm font-medium text-foreground">
+                      {importFile ? importFile.name : "اضغط لرفع ملف CSV أو TXT"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">يدعم ملفات CSV و TXT مفصولة بفواصل أو Tab</p>
+                  </div>
+                  <input type="file" accept=".csv,.txt,.tsv" onChange={handleFileChange} className="hidden" />
+                </label>
+              </div>
+              <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1.5">
+                <Download className="h-3.5 w-3.5" /> تحميل قالب نموذجي
+              </Button>
+            </div>
+
+            {/* Preview */}
+            {importPreview && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-foreground">
+                  معاينة: {importPreview.length} سؤال
+                </p>
+                <div className="max-h-[250px] overflow-auto rounded-xl border border-border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-right font-medium text-muted-foreground">#</th>
+                        <th className="px-3 py-2 text-right font-medium text-muted-foreground">السؤال</th>
+                        <th className="px-3 py-2 text-right font-medium text-muted-foreground">الخيارات</th>
+                        <th className="px-3 py-2 text-right font-medium text-muted-foreground">الإجابة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.slice(0, 20).map((row, i) => {
+                        const headers = Object.keys(row);
+                        const qText = row[headers.find(h =>
+                          ["السؤال", "نص السؤال", "question", "question_text"].some(k => h.includes(k))
+                        ) || headers[0]] || "";
+                        const opts = headers.slice(1, 5).map(h => row[h]).filter(Boolean);
+                        const correct = row[headers.find(h =>
+                          ["الإجابة", "الاجابة", "correct", "answer"].some(k => h.includes(k))
+                        ) || ""] || "";
+
+                        return (
+                          <tr key={i} className="border-t border-border">
+                            <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                            <td className="px-3 py-2 max-w-[200px] truncate">{qText}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{opts.length} خيارات</td>
+                            <td className="px-3 py-2">{correct}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Button variant="hero" className="w-full gap-2" onClick={processImport} disabled={importing}>
+                  {importing ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {importing ? "جاري الاستيراد..." : `استيراد ${importPreview.length} سؤال`}
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
