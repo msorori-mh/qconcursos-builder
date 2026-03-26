@@ -23,6 +23,7 @@ const SubscribePage = lazy(() => import("./pages/SubscribePage.tsx"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.tsx"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx"));
+const StudentReportsPage = lazy(() => import("./pages/StudentReportsPage.tsx"));
 const AboutPage = lazy(() => import("./pages/AboutPage.tsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.tsx"));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage.tsx"));
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/grades/:gradeId/subjects/:subjectId/quiz" element={<ProtectedRoute><QuestionBankPage /></ProtectedRoute>} />
               <Route path="/subscribe" element={<ProtectedRoute><SubscribePage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><StudentReportsPage /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<AdminLayout />}>
