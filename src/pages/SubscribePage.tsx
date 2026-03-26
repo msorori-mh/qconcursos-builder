@@ -251,56 +251,97 @@ const SubscribePage = () => {
         </div>
 
         {/* Step 0: Choose plan */}
-        {step === "plan" && (
-          <div className="space-y-4">
-            {plans.length === 0 ? (
-              <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
-                <p className="text-muted-foreground">لا توجد خطط اشتراك متاحة حالياً</p>
-              </div>
-            ) : (
-              plans.map((plan) => (
-                <button
-                  key={plan.id}
-                  onClick={() => {
-                    setSelectedPlan(plan);
-                    setSelectedSemester(null);
-                    if (plan.duration_type === "semester") {
-                      setStep("semester");
-                    } else {
-                      setStep("method");
-                    }
-                  }}
-                  className="group w-full rounded-2xl border border-border bg-card p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${plan.duration_type === "annual" ? "bg-primary/10" : "bg-accent/15"}`}>
-                      {plan.duration_type === "annual"
-                        ? <Calendar className="h-7 w-7 text-primary" />
-                        : <CalendarDays className="h-7 w-7 text-accent" />}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-card-foreground">{plan.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {plan.duration_type === "semester" ? "الوصول لمحتوى فصل دراسي واحد" : "الوصول لمحتوى الفصلين الدراسيين"}
-                      </p>
-                    </div>
-                    <div className="text-left">
-                      {referralDiscount > 0 ? (
-                        <>
-                          <p className="text-xs line-through text-muted-foreground">{plan.price.toLocaleString("ar-YE")}</p>
-                          <p className="text-lg font-bold text-green-600">{Math.round(plan.price * (1 - referralDiscount / 100)).toLocaleString("ar-YE")}</p>
-                        </>
-                      ) : (
-                        <p className="text-lg font-bold text-primary">{plan.price.toLocaleString("ar-YE")}</p>
+        {step === "plan" && (() => {
+          const semesterPlan = plans.find((p) => p.duration_type === "semester");
+          const annualPlan = plans.find((p) => p.duration_type === "annual");
+          const savingsPercent = semesterPlan && annualPlan
+            ? Math.round(((semesterPlan.price * 2 - annualPlan.price) / (semesterPlan.price * 2)) * 100)
+            : 0;
+          const savingsAmount = semesterPlan && annualPlan
+            ? semesterPlan.price * 2 - annualPlan.price
+            : 0;
+          // Show annual first
+          const sortedPlans = [...plans].sort((a, b) => (a.duration_type === "annual" ? -1 : 1));
+
+          return (
+            <div className="space-y-4">
+              {plans.length === 0 ? (
+                <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
+                  <p className="text-muted-foreground">لا توجد خطط اشتراك متاحة حالياً</p>
+                </div>
+              ) : (
+                sortedPlans.map((plan) => {
+                  const isAnnual = plan.duration_type === "annual";
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => {
+                        setSelectedPlan(plan);
+                        setSelectedSemester(null);
+                        if (plan.duration_type === "semester") {
+                          setStep("semester");
+                        } else {
+                          setStep("method");
+                        }
+                      }}
+                      className={`group relative w-full rounded-2xl border p-6 text-right shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 ${
+                        isAnnual
+                          ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
+                          : "border-border bg-card"
+                      }`}
+                    >
+                      {/* Recommended badge for annual */}
+                      {isAnnual && (
+                        <div className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground shadow-sm">
+                          ⭐ الأفضل قيمة
+                        </div>
                       )}
-                      <p className="text-xs text-muted-foreground">{plan.currency}</p>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        )}
+                      <div className="flex items-center gap-4">
+                        <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${isAnnual ? "bg-primary/10" : "bg-accent/15"}`}>
+                          {isAnnual
+                            ? <Calendar className="h-7 w-7 text-primary" />
+                            : <CalendarDays className="h-7 w-7 text-accent" />}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-card-foreground">{plan.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {isAnnual ? "الوصول لمحتوى الفصلين الدراسيين" : "الوصول لمحتوى فصل دراسي واحد"}
+                          </p>
+                          {isAnnual && savingsPercent > 0 && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-bold text-green-600 dark:text-green-400">
+                                وفّر {savingsPercent}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                توفير {savingsAmount.toLocaleString("ar-YE")} {plan.currency} مقارنة بالاشتراك الفصلي مرتين
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-left shrink-0">
+                          {referralDiscount > 0 ? (
+                            <>
+                              <p className="text-xs line-through text-muted-foreground">{plan.price.toLocaleString("ar-YE")}</p>
+                              <p className="text-lg font-bold text-green-600">{Math.round(plan.price * (1 - referralDiscount / 100)).toLocaleString("ar-YE")}</p>
+                            </>
+                          ) : (
+                            <p className={`text-lg font-bold ${isAnnual ? "text-primary" : "text-foreground"}`}>{plan.price.toLocaleString("ar-YE")}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">{plan.currency}</p>
+                          {isAnnual && semesterPlan && (
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {Math.round(plan.price / 2).toLocaleString("ar-YE")} / فصل
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          );
+        })()}
 
         {/* Step: Choose semester (for semester plans) */}
         {step === "semester" && (
