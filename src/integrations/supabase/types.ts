@@ -384,11 +384,13 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           full_name: string | null
+          governorate: string | null
           grade_id: string | null
           id: string
           phone: string | null
           referral_code: string | null
           referred_by: string | null
+          school_name: string | null
           updated_at: string
           user_id: string
         }
@@ -396,11 +398,13 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
+          governorate?: string | null
           grade_id?: string | null
           id?: string
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          school_name?: string | null
           updated_at?: string
           user_id: string
         }
@@ -408,11 +412,13 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
+          governorate?: string | null
           grade_id?: string | null
           id?: string
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          school_name?: string | null
           updated_at?: string
           user_id?: string
         }
