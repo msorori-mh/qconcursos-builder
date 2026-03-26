@@ -178,7 +178,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
 
   // Determine default tab based on lesson content
-  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz">("video");
+  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai">("video");
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -300,6 +300,7 @@ const LessonPage = () => {
       ? [{ id: "content" as const, label: "الملخص", icon: FileText }]
       : []),
     ...(questions.length > 0 ? [{ id: "quiz" as const, label: `الأسئلة (${questions.length})`, icon: BookOpen }] : []),
+    { id: "ai" as const, label: "المساعد الذكي", icon: Bot },
   ];
 
   if (lessonLoading) {
@@ -437,6 +438,18 @@ const LessonPage = () => {
 
           {activeTab === "quiz" && (
             <LessonQuiz questions={questions} lessonId={lessonId!} userId={user?.id} />
+          )}
+
+          {activeTab === "ai" && (
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+              <AiTutorChat
+                inline
+                lessonContext={{
+                  lessonTitle: lesson.title,
+                  lessonContent: lesson.content_text || undefined,
+                }}
+              />
+            </Suspense>
           )}
         </div>
 
