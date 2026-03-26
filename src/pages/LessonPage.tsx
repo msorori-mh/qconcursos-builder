@@ -17,6 +17,7 @@ import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 import { Progress } from "@/components/ui/progress";
 const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
 const LessonDiscussion = lazy(() => import("@/components/LessonDiscussion"));
+const AiLessonSummary = lazy(() => import("@/components/AiLessonSummary"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
@@ -427,6 +428,10 @@ const LessonPage = () => {
 
           {activeTab === "content" && (
             <div className="space-y-6">
+              {/* AI Summary */}
+              <Suspense fallback={null}>
+                <AiLessonSummary lessonTitle={lesson.title} lessonContent={lesson.content_text} />
+              </Suspense>
               {lesson.content_text && <TextContent text={lesson.content_text} />}
               {lesson.content_pdf_url && <PdfViewer url={lesson.content_pdf_url} />}
               {!lesson.content_text && !lesson.content_pdf_url && (
