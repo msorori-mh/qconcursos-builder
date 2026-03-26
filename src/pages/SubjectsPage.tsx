@@ -88,6 +88,8 @@ const SubjectsPage = () => {
       return data;
     },
     enabled: !!gradeId,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const { data: subjects = [], isLoading } = useQuery({
@@ -98,6 +100,8 @@ const SubjectsPage = () => {
       return (data || []) as SubjectItem[];
     },
     enabled: !!gradeId,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000,
   });
 
   // Get active subscription to check semester access

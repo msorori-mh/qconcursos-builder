@@ -54,6 +54,8 @@ const GradesPage = () => {
   const { data: grades = [], isLoading } = useQuery({
     queryKey: ["grades"],
     queryFn: fetchGrades,
+    staleTime: 30 * 60 * 1000, // 30 minutes - grades rarely change
+    gcTime: 60 * 60 * 1000,
   });
 
   // Redirect non-admin students to their grade directly

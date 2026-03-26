@@ -29,43 +29,36 @@ const AdminDashboard = () => {
   }, []);
 
   const loadAllStats = async () => {
-    const [
-      grades, subjects, lessons, questions,
-      pendingPay, approvedPay, rejectedPay,
-      students, activeSubs, pendingSubs, expiredSubs,
-      revenueData, recentPay,
-    ] = await Promise.all([
-      supabase.from("grades").select("id", { count: "exact", head: true }),
-      supabase.from("subjects").select("id", { count: "exact", head: true }),
-      supabase.from("lessons").select("id", { count: "exact", head: true }),
-      supabase.from("questions").select("id", { count: "exact", head: true }),
-      supabase.from("payment_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("payment_requests").select("id", { count: "exact", head: true }).eq("status", "approved"),
-      supabase.from("payment_requests").select("id", { count: "exact", head: true }).eq("status", "rejected"),
-      supabase.from("profiles").select("id", { count: "exact", head: true }),
-      supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("status", "expired"),
-      supabase.from("payment_requests").select("amount").eq("status", "approved"),
-      supabase.from("payment_requests").select("amount, status, created_at, profiles!payment_requests_user_id_fkey(full_name)").order("created_at", { ascending: false }).limit(5),
+    // Use materialized view for fast stats + only fetch recent payments separately
+    const [statsResult, recentPay] = await Promise.all([
+      supabase.rpc("get_dashboard_stats"),
+      supabase.from("payment_requests")
+        .select("amount, status, created_at, profiles!payment_requests_user_id_fkey(full_name)")
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
-    const revenue = (revenueData.data || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+    const s = statsResult.data?.[0];
+    if (s) {
+      setStats({
+        grades: Number(s.total_grades) || 0,
+        subjects: Number(s.total_subjects) || 0,
+        lessons: Number(s.total_lessons) || 0,
+        questions: Number(s.total_questions) || 0,
+        pendingPayments: Number(s.pending_payments) || 0,
+        approvedPayments: Number(s.approved_payments) || 0,
+        rejectedPayments: Number(s.rejected_payments) || 0,
+        totalStudents: Number(s.total_students) || 0,
+        activeSubscriptions: Number(s.active_subscriptions) || 0,
+        pendingSubscriptions: Number(s.pending_subscriptions) || 0,
+        expiredSubscriptions: Number(s.expired_subscriptions) || 0,
+        totalRevenue: Number(s.total_revenue) || 0,
+      });
+    }
 
-    setStats({
-      grades: grades.count || 0,
-      subjects: subjects.count || 0,
-      lessons: lessons.count || 0,
-      questions: questions.count || 0,
-      pendingPayments: pendingPay.count || 0,
-      approvedPayments: approvedPay.count || 0,
-      rejectedPayments: rejectedPay.count || 0,
-      totalStudents: students.count || 0,
-      activeSubscriptions: activeSubs.count || 0,
-      pendingSubscriptions: pendingSubs.count || 0,
-      expiredSubscriptions: expiredSubs.count || 0,
-      totalRevenue: revenue,
-    });
+    // Refresh materialized view in background for next load
+    supabase.rpc("refresh_dashboard_stats").then(() => {});
+
     setRecentPayments(recentPay.data || []);
     setLoading(false);
   };

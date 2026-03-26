@@ -1003,6 +1003,23 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_subscriptions: number
+          approved_payments: number
+          expired_subscriptions: number
+          pending_payments: number
+          pending_subscriptions: number
+          rejected_payments: number
+          total_grades: number
+          total_lessons: number
+          total_questions: number
+          total_revenue: number
+          total_students: number
+          total_subjects: number
+        }[]
+      }
       get_user_email: { Args: { _user_id: string }; Returns: string }
       get_user_total_points: { Args: { _user_id: string }; Returns: number }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
@@ -1034,6 +1051,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_dashboard_stats: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
