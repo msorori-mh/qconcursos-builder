@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, UserCheck, UserX, Eye } from "lucide-react";
+import { Search, UserCheck, UserX, Eye, MapPin, School, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +13,19 @@ import {
 import { Label } from "@/components/ui/label";
 import PaginationControls from "@/components/admin/PaginationControls";
 
+const YEMEN_GOVERNORATES = [
+  "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة", "صعدة",
+  "صنعاء", "عمران", "المحويت", "ريمة", "البيضاء", "لحج", "أبين", "الضالع",
+  "شبوة", "حضرموت", "المهرة", "سقطرى", "مأرب", "الجوف",
+];
+
 interface Student {
   id: string;
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  governorate: string | null;
+  school_name: string | null;
   created_at: string;
   subscription?: {
     id: string;
@@ -34,36 +42,55 @@ const AdminStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [governorateFilter, setGovernorateFilter] = useState<string>("all");
+  const [schoolFilter, setSchoolFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [processing, setProcessing] = useState(false);
   const [duration, setDuration] = useState<string>("6");
+  const [sortBy, setSortBy] = useState<"date" | "name" | "governorate">("date");
 
   useEffect(() => {
     setPage(1);
-  }, [search, filter]);
+  }, [search, filter, governorateFilter, schoolFilter, sortBy]);
 
   useEffect(() => {
     loadStudents();
-  }, [page, filter, search]);
+  }, [page, filter, search, governorateFilter, schoolFilter, sortBy]);
 
   const loadStudents = async () => {
     setLoading(true);
     try {
-      // Load profiles
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       let query = supabase
         .from("profiles")
-        .select("id, user_id, full_name, phone, created_at", { count: "exact" })
-        .order("created_at", { ascending: false })
+        .select("id, user_id, full_name, phone, governorate, school_name, created_at", { count: "exact" })
         .range(from, to);
+
+      // Sorting
+      if (sortBy === "name") {
+        query = query.order("full_name", { ascending: true, nullsFirst: false });
+      } else if (sortBy === "governorate") {
+        query = query.order("governorate", { ascending: true, nullsFirst: false });
+      } else {
+        query = query.order("created_at", { ascending: false });
+      }
 
       if (search.trim()) {
         query = query.or(`full_name.ilike.%${search.trim()}%,phone.ilike.%${search.trim()}%`);
+      }
+
+      if (governorateFilter && governorateFilter !== "all") {
+        query = query.eq("governorate", governorateFilter);
+      }
+
+      if (schoolFilter.trim()) {
+        query = query.ilike("school_name", `%${schoolFilter.trim()}%`);
       }
 
       const { data: profiles, count } = await query;
@@ -74,7 +101,6 @@ const AdminStudents = () => {
         return;
       }
 
-      // Load subscriptions for these users
       const userIds = profiles.map((p) => p.user_id);
       const { data: subs } = await supabase
         .from("subscriptions")
@@ -82,7 +108,6 @@ const AdminStudents = () => {
         .in("user_id", userIds)
         .order("created_at", { ascending: false });
 
-      // Map latest subscription per user
       const subMap: Record<string, any> = {};
       (subs || []).forEach((s) => {
         if (!subMap[s.user_id]) subMap[s.user_id] = s;
@@ -93,7 +118,6 @@ const AdminStudents = () => {
         subscription: subMap[p.user_id] || null,
       }));
 
-      // Client-side filter for subscription status
       if (filter === "active") {
         results = results.filter(
           (s) => s.subscription?.status === "active" &&
@@ -145,7 +169,6 @@ const AdminStudents = () => {
           if (error) throw error;
         }
 
-        // Send notification
         await supabase.from("notifications").insert({
           user_id: student.user_id,
           title: "تم تفعيل اشتراكك",
@@ -153,7 +176,6 @@ const AdminStudents = () => {
           type: "success",
         });
 
-        // Send activation email
         try {
           const { data: emailData } = await supabase.rpc("get_user_email", { _user_id: student.user_id });
           if (emailData) {
@@ -228,6 +250,12 @@ const AdminStudents = () => {
     );
   };
 
+  const activeFiltersCount = [
+    governorateFilter !== "all",
+    schoolFilter.trim() !== "",
+    sortBy !== "date",
+  ].filter(Boolean).length;
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
@@ -238,7 +266,7 @@ const AdminStudents = () => {
       </div>
 
       {/* Search & Filter */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -266,8 +294,77 @@ const AdminStudents = () => {
               {f.label}
             </button>
           ))}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              showFilters || activeFiltersCount > 0
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4 inline ml-1" />
+            فلاتر
+            {activeFiltersCount > 0 && (
+              <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Advanced Filters */}
+      {showFilters && (
+        <div className="mb-6 rounded-xl border border-border bg-card p-4 shadow-sm animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <Label className="mb-1.5 block text-sm">المحافظة</Label>
+              <Select value={governorateFilter} onValueChange={setGovernorateFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="جميع المحافظات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المحافظات</SelectItem>
+                  {YEMEN_GOVERNORATES.map((gov) => (
+                    <SelectItem key={gov} value={gov}>{gov}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-sm">المدرسة</Label>
+              <Input
+                placeholder="بحث باسم المدرسة..."
+                value={schoolFilter}
+                onChange={(e) => setSchoolFilter(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5 block text-sm">ترتيب حسب</Label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">تاريخ التسجيل</SelectItem>
+                  <SelectItem value="name">الاسم</SelectItem>
+                  <SelectItem value="governorate">المحافظة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-3 text-xs"
+              onClick={() => { setGovernorateFilter("all"); setSchoolFilter(""); setSortBy("date"); }}
+            >
+              مسح الفلاتر
+            </Button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -276,7 +373,7 @@ const AdminStudents = () => {
       ) : students.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
           <p className="text-muted-foreground">
-            {search ? "لا توجد نتائج مطابقة" : "لا يوجد طلاب بعد"}
+            {search || governorateFilter !== "all" || schoolFilter ? "لا توجد نتائج مطابقة" : "لا يوجد طلاب بعد"}
           </p>
         </div>
       ) : (
@@ -297,6 +394,18 @@ const AdminStudents = () => {
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       {student.phone && <span>📱 {student.phone}</span>}
+                      {student.governorate && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {student.governorate}
+                        </span>
+                      )}
+                      {student.school_name && (
+                        <span className="inline-flex items-center gap-1">
+                          <School className="h-3.5 w-3.5" />
+                          {student.school_name}
+                        </span>
+                      )}
                       <span>انضم: {new Date(student.created_at).toLocaleDateString("ar-YE")}</span>
                       {student.subscription?.expires_at && isActive(student) && (
                         <span>
@@ -339,6 +448,14 @@ const AdminStudents = () => {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">الهاتف</span>
                   <span className="text-foreground font-medium">{selectedStudent.phone || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">المحافظة</span>
+                  <span className="text-foreground font-medium">{selectedStudent.governorate || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">المدرسة</span>
+                  <span className="text-foreground font-medium">{selectedStudent.school_name || "—"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">تاريخ التسجيل</span>
