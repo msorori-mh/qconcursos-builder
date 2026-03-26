@@ -592,8 +592,10 @@ export type Database = {
           options: Json
           question_text: string
           question_type: string | null
+          semester: number | null
           sort_order: number
           subject_id: string | null
+          unit: string | null
           year: number | null
         }
         Insert: {
@@ -605,8 +607,10 @@ export type Database = {
           options: Json
           question_text: string
           question_type?: string | null
+          semester?: number | null
           sort_order?: number
           subject_id?: string | null
+          unit?: string | null
           year?: number | null
         }
         Update: {
@@ -618,8 +622,10 @@ export type Database = {
           options?: Json
           question_text?: string
           question_type?: string | null
+          semester?: number | null
           sort_order?: number
           subject_id?: string | null
+          unit?: string | null
           year?: number | null
         }
         Relationships: [
