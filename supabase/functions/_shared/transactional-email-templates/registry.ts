@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as subscriptionActivation } from './subscription-activation.tsx'
+import { template as parentProgressReport } from './parent-progress-report.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'subscription-activation': subscriptionActivation,
+  'parent-progress-report': parentProgressReport,
 }

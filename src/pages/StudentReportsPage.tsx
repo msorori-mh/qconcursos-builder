@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
+import SendParentReport from "@/components/SendParentReport";
 import {
   BarChart3, BookOpen, CheckCircle2, Award, Target,
   TrendingUp, Clock, Star, Trophy,
@@ -139,20 +140,40 @@ const StudentReportsPage = () => {
               <p className="text-sm text-muted-foreground">ملخص أدائك وتقدمك الدراسي</p>
             </div>
           </div>
-          {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
-            <div className="flex flex-wrap gap-2">
-              {profileInfo.governorate && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
-                  📍 {profileInfo.governorate}
-                </span>
-              )}
-              {profileInfo.school_name && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent/5 border border-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
-                  🏫 {profileInfo.school_name}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {subjects.length > 0 && (
+              <SendParentReport
+                studentName={profileInfo?.full_name || "الطالب"}
+                overallPercent={overallPercent}
+                avgScore={overallAvg}
+                completedLessons={totalCompleted}
+                totalLessons={totalLessons}
+                subjectsCount={subjects.length}
+                certificatesCount={certificatesCount}
+                subjects={subjects.map((s) => ({
+                  name: s.subjectName,
+                  completionPercent: s.completionPercent,
+                  avgScore: s.avgScore,
+                  completedLessons: s.completedLessons,
+                  totalLessons: s.totalLessons,
+                }))}
+              />
+            )}
+            {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
+              <div className="flex flex-wrap gap-2">
+                {profileInfo.governorate && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                    📍 {profileInfo.governorate}
+                  </span>
+                )}
+                {profileInfo.school_name && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent/5 border border-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                    🏫 {profileInfo.school_name}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
