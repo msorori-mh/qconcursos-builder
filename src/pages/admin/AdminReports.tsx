@@ -39,7 +39,6 @@ const TIME_RANGES = [
 
 type TimeRange = typeof TIME_RANGES[number]["key"];
 
-interface RawPayment { amount: number; created_at: string; }
 interface Grade { id: string; name: string; }
 
 // Chart data interfaces
