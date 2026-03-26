@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import {
   ArrowLeft, ArrowRight, FileText, Play, BookOpen, Lock,
   ChevronRight, ChevronLeft, Download, Maximize2, CheckCircle2,
-  Clock, Eye,
+  Clock, Eye, Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import SEOHead, { courseJsonLd } from "@/components/SEOHead";
 import LessonQuiz from "@/components/LessonQuiz";
 import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 import { Progress } from "@/components/ui/progress";
+const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
@@ -176,7 +178,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
 
   // Determine default tab based on lesson content
-  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz">("video");
+  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai">("video");
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -298,6 +300,7 @@ const LessonPage = () => {
       ? [{ id: "content" as const, label: "الملخص", icon: FileText }]
       : []),
     ...(questions.length > 0 ? [{ id: "quiz" as const, label: `الأسئلة (${questions.length})`, icon: BookOpen }] : []),
+    { id: "ai" as const, label: "المساعد الذكي", icon: Bot },
   ];
 
   if (lessonLoading) {
@@ -435,6 +438,18 @@ const LessonPage = () => {
 
           {activeTab === "quiz" && (
             <LessonQuiz questions={questions} lessonId={lessonId!} userId={user?.id} />
+          )}
+
+          {activeTab === "ai" && (
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+              <AiTutorChat
+                inline
+                lessonContext={{
+                  lessonTitle: lesson.title,
+                  lessonContent: lesson.content_text || undefined,
+                }}
+              />
+            </Suspense>
           )}
         </div>
 

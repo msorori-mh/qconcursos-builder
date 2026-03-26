@@ -27,7 +27,7 @@ const Navbar = () => {
     ...(user && !isAdmin ? [
       { href: "/reports", label: "تقاريري" },
       { href: "/schedule", label: "جدولي" },
-      { href: "/study-plan", label: "المساعد الذكي" },
+      { href: "/ai-tutor", label: "المساعد الذكي" },
       { href: "/achievements", label: "إنجازاتي" },
     ] : []),
     ...(isAdmin ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
