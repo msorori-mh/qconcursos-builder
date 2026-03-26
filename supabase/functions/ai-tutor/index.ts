@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build system prompt based on context
+    // Get user for logging
+    const authHeader = req.headers.get("authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+    
+    let userId: string | null = null;
+    if (authHeader) {
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { authorization: authHeader } },
+      });
+      const { data: { user } } = await anonClient.auth.getUser();
+      userId = user?.id ?? null;
+    }
+
     let systemPrompt = `أنت "تنوير AI" — مساعد تعليمي ذكي لمنصة تنوير التعليمية في اليمن.
 مهمتك مساعدة الطلاب في فهم دروسهم وحل أسئلتهم والإجابة على استفساراتهم الدراسية.
 
@@ -32,6 +47,7 @@ serve(async (req) => {
       if (context.lessonContent) systemPrompt += `\n\nملخص الدرس:\n${context.lessonContent.slice(0, 2000)}`;
     }
 
+    const model = "google/gemini-3-flash-preview";
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -39,7 +55,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
@@ -47,6 +63,17 @@ serve(async (req) => {
         stream: true,
       }),
     });
+
+    // Log AI usage
+    if (userId) {
+      supabase.from("ai_usage_logs").insert({
+        user_id: userId,
+        feature: "ai_tutor",
+        model,
+        success: response.ok,
+        error_message: response.ok ? null : `HTTP ${response.status}`,
+      }).then(() => {});
+    }
 
     if (!response.ok) {
       if (response.status === 429) {

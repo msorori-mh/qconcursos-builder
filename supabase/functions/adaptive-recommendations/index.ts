@@ -10,23 +10,22 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Get user from auth header
     const authHeader = req.headers.get("authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { authorization: authHeader || "" } },
     });
+    const serviceClient = createClient(supabaseUrl, serviceKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch student data
     const [progressRes, lessonsRes, subjectsRes, questionsRes, profileRes] = await Promise.all([
       supabase.from("user_progress").select("lesson_id, completed, quiz_score, completed_at").eq("user_id", user.id),
       supabase.from("lessons").select("id, title, subject_id, sort_order"),
@@ -41,12 +40,8 @@ serve(async (req) => {
     const questions = questionsRes.data || [];
     const gradeId = profileRes.data?.grade_id;
 
-    // Filter subjects by student grade
-    const gradeSubjects = gradeId
-      ? subjects.filter((s: any) => s.grade_id === gradeId)
-      : subjects;
+    const gradeSubjects = gradeId ? subjects.filter((s: any) => s.grade_id === gradeId) : subjects;
 
-    // Build analysis
     const progressMap = new Map(progress.map((p: any) => [p.lesson_id, p]));
     const questionsPerLesson = new Map<string, number>();
     questions.forEach((q: any) => {
@@ -69,7 +64,6 @@ serve(async (req) => {
         ? Math.round(quizScores.reduce((a: number, b: number) => a + b, 0) / quizScores.length) 
         : null;
 
-      // Find weak lessons (quiz score < 70 or not completed)
       const weakLessons = subjectLessons.filter((l: any) => {
         const p = progressMap.get(l.id);
         if (!p?.completed) return true;
@@ -77,7 +71,6 @@ serve(async (req) => {
         return false;
       });
 
-      // Lessons with available questions but low/no quiz score  
       const reviewPriority = subjectLessons
         .filter((l: any) => {
           const p = progressMap.get(l.id);
@@ -85,39 +78,31 @@ serve(async (req) => {
           return hasQuestions && (!p?.quiz_score || p.quiz_score < 80);
         })
         .map((l: any) => ({
-          id: l.id,
-          title: l.title,
+          id: l.id, title: l.title,
           score: progressMap.get(l.id)?.quiz_score ?? null,
           questionsCount: questionsPerLesson.get(l.id) || 0,
         }));
 
       return {
-        subjectId: subject.id,
-        subjectName: subject.name,
-        totalLessons: subjectLessons.length,
-        completedCount: completedLessons.length,
-        completionPct: subjectLessons.length > 0 
-          ? Math.round((completedLessons.length / subjectLessons.length) * 100) 
-          : 0,
-        avgScore,
-        weakLessonsCount: weakLessons.length,
+        subjectId: subject.id, subjectName: subject.name,
+        totalLessons: subjectLessons.length, completedCount: completedLessons.length,
+        completionPct: subjectLessons.length > 0 ? Math.round((completedLessons.length / subjectLessons.length) * 100) : 0,
+        avgScore, weakLessonsCount: weakLessons.length,
         nextLesson: incompleteLessons[0] ? { id: incompleteLessons[0].id, title: incompleteLessons[0].title } : null,
         reviewPriority: reviewPriority.slice(0, 3),
       };
     });
 
-    // Build performance data for AI analysis
     const performanceData = {
       totalSubjects: subjectAnalysis.length,
       overallCompletion: subjectAnalysis.length > 0
-        ? Math.round(subjectAnalysis.reduce((a: number, s: any) => a + s.completionPct, 0) / subjectAnalysis.length)
-        : 0,
+        ? Math.round(subjectAnalysis.reduce((a: number, s: any) => a + s.completionPct, 0) / subjectAnalysis.length) : 0,
       subjects: subjectAnalysis,
     };
 
-    // Generate AI recommendations
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     let aiRecommendations = null;
+    const model = "google/gemini-3-flash-preview";
 
     if (LOVABLE_API_KEY && subjectAnalysis.length > 0) {
       try {
@@ -128,7 +113,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model,
             messages: [
               {
                 role: "system",
@@ -144,40 +129,38 @@ serve(async (req) => {
   "motivationalMessage": "رسالة تحفيزية قصيرة"
 }`,
               },
-              {
-                role: "user",
-                content: `بيانات الطالب:\n${JSON.stringify(performanceData, null, 2)}`,
-              },
+              { role: "user", content: `بيانات الطالب:\n${JSON.stringify(performanceData, null, 2)}` },
             ],
             response_format: { type: "json_object" },
           }),
         });
 
+        // Log AI usage
+        serviceClient.from("ai_usage_logs").insert({
+          user_id: user.id,
+          feature: "adaptive_recommendations",
+          model,
+          success: aiResponse.ok,
+          error_message: aiResponse.ok ? null : `HTTP ${aiResponse.status}`,
+        }).then(() => {});
+
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
           const content = aiData.choices?.[0]?.message?.content;
-          try {
-            aiRecommendations = JSON.parse(content);
-          } catch {
-            aiRecommendations = null;
-          }
+          try { aiRecommendations = JSON.parse(content); } catch { aiRecommendations = null; }
         }
       } catch (e) {
         console.error("AI recommendation error:", e);
       }
     }
 
-    return new Response(JSON.stringify({
-      performance: performanceData,
-      ai: aiRecommendations,
-    }), {
+    return new Response(JSON.stringify({ performance: performanceData, ai: aiRecommendations }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("adaptive-recommendations error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

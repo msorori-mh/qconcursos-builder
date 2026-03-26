@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,9 +16,23 @@ serve(async (req) => {
 
     if (!lessonTitle) {
       return new Response(JSON.stringify({ error: "lessonTitle is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Get user for logging
+    const authHeader = req.headers.get("authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+    
+    let userId: string | null = null;
+    if (authHeader) {
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { authorization: authHeader } },
+      });
+      const { data: { user } } = await anonClient.auth.getUser();
+      userId = user?.id ?? null;
     }
 
     const systemPrompt = `أنت مساعد تعليمي متخصص في تلخيص الدروس لطلاب المدارس في اليمن.
@@ -46,6 +61,7 @@ serve(async (req) => {
       ? `الدرس: ${lessonTitle}\n\nمحتوى الدرس:\n${lessonContent.substring(0, 4000)}`
       : `الدرس: ${lessonTitle}\n\nلا يوجد محتوى نصي متاح. أنشئ ملخصاً عاماً بناءً على عنوان الدرس فقط.`;
 
+    const model = "google/gemini-3-flash-preview";
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -53,7 +69,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -62,17 +78,26 @@ serve(async (req) => {
       }),
     });
 
+    // Log AI usage
+    if (userId) {
+      supabase.from("ai_usage_logs").insert({
+        user_id: userId,
+        feature: "lesson_summary",
+        model,
+        success: response.ok,
+        error_message: response.ok ? null : `HTTP ${response.status}`,
+      }).then(() => {});
+    }
+
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "تم تجاوز الحد المسموح، حاول لاحقاً" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "يرجى شحن رصيد الذكاء الاصطناعي" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
@@ -96,8 +121,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("generate-lesson-summary error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
