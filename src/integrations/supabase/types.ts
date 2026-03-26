@@ -992,23 +992,7 @@ export type Database = {
       }
     }
     Views: {
-      dashboard_stats: {
-        Row: {
-          active_subscriptions: number | null
-          approved_payments: number | null
-          expired_subscriptions: number | null
-          pending_payments: number | null
-          pending_subscriptions: number | null
-          rejected_payments: number | null
-          total_grades: number | null
-          total_lessons: number | null
-          total_questions: number | null
-          total_revenue: number | null
-          total_students: number | null
-          total_subjects: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       delete_email: {
@@ -1018,6 +1002,23 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_subscriptions: number
+          approved_payments: number
+          expired_subscriptions: number
+          pending_payments: number
+          pending_subscriptions: number
+          rejected_payments: number
+          total_grades: number
+          total_lessons: number
+          total_questions: number
+          total_revenue: number
+          total_students: number
+          total_subjects: number
+        }[]
       }
       get_user_email: { Args: { _user_id: string }; Returns: string }
       get_user_total_points: { Args: { _user_id: string }; Returns: number }
