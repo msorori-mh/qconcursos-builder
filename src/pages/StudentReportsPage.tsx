@@ -159,20 +159,21 @@ const StudentReportsPage = () => {
                 }))}
               />
             )}
-          {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
-            <div className="flex flex-wrap gap-2">
-              {profileInfo.governorate && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
-                  📍 {profileInfo.governorate}
-                </span>
-              )}
-              {profileInfo.school_name && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent/5 border border-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
-                  🏫 {profileInfo.school_name}
-                </span>
-              )}
-            </div>
-          )}
+            {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
+              <div className="flex flex-wrap gap-2">
+                {profileInfo.governorate && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                    📍 {profileInfo.governorate}
+                  </span>
+                )}
+                {profileInfo.school_name && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent/5 border border-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                    🏫 {profileInfo.school_name}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
