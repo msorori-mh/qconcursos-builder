@@ -15,6 +15,7 @@ import SEOHead, { courseJsonLd } from "@/components/SEOHead";
 import LessonQuiz from "@/components/LessonQuiz";
 import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 import { Progress } from "@/components/ui/progress";
+const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
