@@ -167,8 +167,8 @@ const SendParentReport = ({
                 onClick={() => setMethod("whatsapp")}
                 className="w-full flex items-center gap-3 rounded-xl border border-border p-4 hover:bg-muted/50 transition-colors text-right"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
-                  <MessageCircle className="h-5 w-5 text-green-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: 'hsl(142 71% 45% / 0.1)' }}>
+                  <MessageCircle className="h-5 w-5" style={{ color: 'hsl(142 71% 45%)' }} />
                 </div>
                 <div>
                   <p className="font-medium text-foreground">عبر واتساب</p>
@@ -230,7 +230,7 @@ const SendParentReport = ({
               <Button
                 onClick={sendViaWhatsApp}
                 disabled={!parentPhone}
-                className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                className="w-full gap-2" style={{ backgroundColor: 'hsl(142 71% 35%)', color: 'white' }}
               >
                 <MessageCircle className="h-4 w-4" />
                 فتح واتساب
