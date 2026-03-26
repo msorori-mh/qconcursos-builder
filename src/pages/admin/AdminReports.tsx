@@ -380,7 +380,7 @@ const AdminReports = () => {
 
       {/* Governorate Distribution */}
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartCard title="توزيع الطلاب حسب المحافظة" icon={<MapPin className="h-4 w-4 text-primary" />}>
+        <ChartCard title="توزيع الطلاب حسب المحافظة" icon={<MapPin className="h-4 w-4 text-primary" />} onExport={exportGovReport}>
           {govData.length > 0 ? (
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={govData} layout="vertical" margin={{ right: 10 }}>
@@ -400,7 +400,7 @@ const AdminReports = () => {
           )}
         </ChartCard>
 
-        <ChartCard title="نسب المحافظات" icon={<MapPin className="h-4 w-4 text-accent" />}>
+        <ChartCard title="نسب المحافظات" icon={<MapPin className="h-4 w-4 text-accent" />} onExport={exportGovReport}>
           {govData.length > 0 ? (
             <ResponsiveContainer width="100%" height={320}>
               <PieChart>
@@ -429,7 +429,7 @@ const AdminReports = () => {
 
       {/* Top Schools */}
       {schoolData.length > 0 && (
-        <ChartCard title="أكثر المدارس تسجيلاً (أفضل 15)" icon={<School className="h-4 w-4 text-success" />}>
+        <ChartCard title="أكثر المدارس تسجيلاً (أفضل 15)" icon={<School className="h-4 w-4 text-success" />} onExport={exportSchoolReport}>
           <ResponsiveContainer width="100%" height={Math.max(280, schoolData.length * 36)}>
             <BarChart data={schoolData} layout="vertical" margin={{ right: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -449,7 +449,7 @@ const AdminReports = () => {
       )}
 
       {/* Monthly Revenue Chart */}
-      <ChartCard title="الإيرادات الشهرية" icon={<DollarSign className="h-4 w-4 text-accent" />}>
+      <ChartCard title="الإيرادات الشهرية" icon={<DollarSign className="h-4 w-4 text-accent" />} onExport={exportRevenueReport}>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -462,7 +462,10 @@ const AdminReports = () => {
       </ChartCard>
 
       {/* Student Growth Chart */}
-      <ChartCard title="نمو عدد الطلاب" icon={<Users className="h-4 w-4 text-primary" />}>
+      <ChartCard title="نمو عدد الطلاب" icon={<Users className="h-4 w-4 text-primary" />} onExport={() => {
+        downloadCSV("students-growth.csv", ["الشهر", "طلاب جدد"], monthlyData.map((m) => [m.month, String(m.students)]));
+        toast({ title: "تم تصدير تقرير نمو الطلاب" });
+      }}>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -476,7 +479,10 @@ const AdminReports = () => {
 
       {/* Content + Subscriptions row */}
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartCard title="توزيع المحتوى التعليمي" icon={<FileText className="h-4 w-4 text-success" />}>
+        <ChartCard title="توزيع المحتوى التعليمي" icon={<FileText className="h-4 w-4 text-success" />} onExport={() => {
+          downloadCSV("content-report.csv", ["النوع", "العدد"], contentData.map((c) => [c.name, String(c.count)]));
+          toast({ title: "تم تصدير تقرير المحتوى" });
+        }}>
           <ResponsiveContainer width="100%" height={240}>
             <PieChart>
               <Pie data={contentData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="count" label={({ name, count }) => `${name}: ${count}`}>
@@ -489,7 +495,7 @@ const AdminReports = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="توزيع حالات الاشتراكات" icon={<Calendar className="h-4 w-4 text-primary" />}>
+        <ChartCard title="توزيع حالات الاشتراكات" icon={<Calendar className="h-4 w-4 text-primary" />} onExport={exportSubscriptionsReport}>
           {subStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -509,7 +515,10 @@ const AdminReports = () => {
 
       {/* Grade Breakdown Bar */}
       {gradeData.length > 0 && (
-        <ChartCard title="أداء المحتوى حسب الصف" icon={<GraduationCap className="h-4 w-4 text-primary" />}>
+        <ChartCard title="أداء المحتوى حسب الصف" icon={<GraduationCap className="h-4 w-4 text-primary" />} onExport={() => {
+          downloadCSV("grade-content.csv", ["الصف", "المواد", "الدروس"], gradeData.map((g) => [g.grade, String(g.subjects), String(g.lessons)]));
+          toast({ title: "تم تصدير تقرير المحتوى حسب الصف" });
+        }}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={gradeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
