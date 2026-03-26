@@ -992,7 +992,23 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_stats: {
+        Row: {
+          active_subscriptions: number | null
+          approved_payments: number | null
+          expired_subscriptions: number | null
+          pending_payments: number | null
+          pending_subscriptions: number | null
+          rejected_payments: number | null
+          total_grades: number | null
+          total_lessons: number | null
+          total_questions: number | null
+          total_revenue: number | null
+          total_students: number | null
+          total_subjects: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
@@ -1034,6 +1050,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_dashboard_stats: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
