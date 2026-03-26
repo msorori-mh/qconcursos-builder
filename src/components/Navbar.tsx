@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, Menu, X, LogOut, User, BarChart3 } from "lucide-react";
+import { BookOpen, Menu, X, LogOut, User, BarChart3, Brain } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import PointsBadge from "@/components/PointsBadge";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -28,6 +28,7 @@ const Navbar = () => {
       { href: "/reports", label: "تقاريري" },
       { href: "/schedule", label: "جدولي" },
       { href: "/ai-tutor", label: "المساعد الذكي" },
+      { href: "/adaptive", label: "التعلم التكيفي" },
       { href: "/achievements", label: "إنجازاتي" },
     ] : []),
     ...(isAdmin ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
