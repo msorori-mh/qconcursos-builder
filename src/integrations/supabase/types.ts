@@ -1020,6 +1020,44 @@ export type Database = {
           total_subjects: number
         }[]
       }
+      get_report_governorate_data: {
+        Args: { _grade_id?: string; _months_back?: number }
+        Returns: {
+          governorate: string
+          student_count: number
+        }[]
+      }
+      get_report_grade_content: {
+        Args: never
+        Returns: {
+          grade_name: string
+          lessons_count: number
+          subjects_count: number
+        }[]
+      }
+      get_report_monthly_data: {
+        Args: { _grade_id?: string; _months_back?: number }
+        Returns: {
+          new_students: number
+          revenue: number
+          year_month: string
+        }[]
+      }
+      get_report_school_data: {
+        Args: { _grade_id?: string; _limit?: number; _months_back?: number }
+        Returns: {
+          governorate: string
+          school_name: string
+          student_count: number
+        }[]
+      }
+      get_report_subscription_status: {
+        Args: { _grade_id?: string; _months_back?: number }
+        Returns: {
+          status: string
+          sub_count: number
+        }[]
+      }
       get_user_email: { Args: { _user_id: string }; Returns: string }
       get_user_total_points: { Args: { _user_id: string }; Returns: number }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }

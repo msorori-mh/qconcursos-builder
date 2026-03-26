@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend, PieChart, Pie, Cell,
@@ -39,10 +39,6 @@ const TIME_RANGES = [
 
 type TimeRange = typeof TIME_RANGES[number]["key"];
 
-// Raw data interfaces
-interface RawProfile { created_at: string; governorate: string | null; school_name: string | null; grade_id: string | null; }
-interface RawPayment { amount: number; created_at: string; }
-interface RawSub { status: string; user_id: string; created_at: string; grade_id: string | null; }
 interface Grade { id: string; name: string; }
 
 // Chart data interfaces
@@ -64,14 +60,15 @@ const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
 
 const AdminReports = () => {
   const { toast } = useToast();
-  // Raw data
-  const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
-  const [rawPayments, setRawPayments] = useState<RawPayment[]>([]);
-  const [rawSubs, setRawSubs] = useState<RawSub[]>([]);
+  // Aggregated data from server
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [govData, setGovData] = useState<GovData[]>([]);
+  const [schoolData, setSchoolData] = useState<SchoolData[]>([]);
+  const [subStatusData, setSubStatusData] = useState<{ name: string; value: number }[]>([]);
+  const [gradeData, setGradeData] = useState<{ grade: string; subjects: number; lessons: number }[]>([]);
+  const [contentData, setContentData] = useState<{ name: string; count: number }[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [subjectsData, setSubjectsData] = useState<any[]>([]);
-  const [lessonsData, setLessonsData] = useState<any[]>([]);
-  const [questionsCount, setQuestionsCount] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -80,142 +77,94 @@ const AdminReports = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    loadRawData();
-  }, []);
+    loadData();
+  }, [timeRange, gradeFilter]);
 
-  const loadRawData = async () => {
-    const [payments, profiles, gradesRes, subjects, lessons, questions, subscriptions] = await Promise.all([
-      supabase.from("payment_requests").select("amount, created_at").eq("status", "approved"),
-      supabase.from("profiles").select("created_at, governorate, school_name, grade_id"),
+  const getMonthsBack = () => {
+    const range = TIME_RANGES.find((r) => r.key === timeRange);
+    return range?.months || 0;
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    const monthsBack = getMonthsBack();
+    const gradeId = gradeFilter !== "all" ? gradeFilter : null;
+
+    const [gradesRes, monthlyRes, govRes, schoolRes, subRes, gradeContentRes, dashStats] = await Promise.all([
       supabase.from("grades").select("id, name").order("sort_order"),
-      supabase.from("subjects").select("id, grade_id"),
-      supabase.from("lessons").select("id, subject_id"),
-      supabase.from("questions").select("id", { count: "exact", head: true }),
-      supabase.from("subscriptions").select("status, user_id, created_at, grade_id"),
+      supabase.rpc("get_report_monthly_data", {
+        _months_back: monthsBack || 24,
+        _grade_id: gradeId,
+      }),
+      supabase.rpc("get_report_governorate_data", {
+        _months_back: monthsBack,
+        _grade_id: gradeId,
+      }),
+      supabase.rpc("get_report_school_data", {
+        _months_back: monthsBack,
+        _grade_id: gradeId,
+        _limit: 15,
+      }),
+      supabase.rpc("get_report_subscription_status", {
+        _months_back: monthsBack,
+        _grade_id: gradeId,
+      }),
+      supabase.rpc("get_report_grade_content"),
+      supabase.rpc("get_dashboard_stats"),
     ]);
 
-    setRawPayments((payments.data || []) as RawPayment[]);
-    setRawProfiles((profiles.data || []) as RawProfile[]);
     setGrades((gradesRes.data || []) as Grade[]);
-    setSubjectsData(subjects.data || []);
-    setLessonsData(lessons.data || []);
-    setQuestionsCount(questions.count || 0);
-    setRawSubs((subscriptions.data || []) as RawSub[]);
+
+    // Monthly data
+    const MONTHS_MAP: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) MONTHS_MAP[String(i + 1).padStart(2, "0")] = MONTHS_AR[i];
+    setMonthlyData((monthlyRes.data || []).map((r: any) => {
+      const [y, m] = r.year_month.split("-");
+      return {
+        month: `${MONTHS_MAP[m] || m} ${y.slice(2)}`,
+        revenue: Number(r.revenue) || 0,
+        students: Number(r.new_students) || 0,
+      };
+    }));
+
+    // Governorate
+    setGovData((govRes.data || []).map((r: any) => ({ name: r.governorate, count: Number(r.student_count) })));
+    setTotalStudents((govRes.data || []).reduce((s: number, r: any) => s + Number(r.student_count), 0));
+
+    // Schools
+    setSchoolData((schoolRes.data || []).map((r: any) => ({
+      name: r.school_name,
+      count: Number(r.student_count),
+      governorate: r.governorate,
+    })));
+
+    // Subscriptions
+    const statusLabels: Record<string, string> = { active: "نشط", pending: "معلق", expired: "منتهي" };
+    setSubStatusData((subRes.data || []).map((r: any) => ({
+      name: statusLabels[r.status] || r.status,
+      value: Number(r.sub_count),
+    })));
+
+    // Grade content
+    setGradeData((gradeContentRes.data || []).map((r: any) => ({
+      grade: r.grade_name,
+      subjects: Number(r.subjects_count),
+      lessons: Number(r.lessons_count),
+    })));
+
+    // Content summary from dashboard stats
+    const ds = dashStats.data?.[0];
+    if (ds) {
+      setContentData([
+        { name: "الصفوف", count: Number(ds.total_grades) },
+        { name: "المواد", count: Number(ds.total_subjects) },
+        { name: "الدروس", count: Number(ds.total_lessons) },
+        { name: "الأسئلة", count: Number(ds.total_questions) },
+      ]);
+    }
+
     setLoading(false);
   };
-
-  // Compute cutoff date from timeRange
-  const cutoffDate = useMemo(() => {
-    const range = TIME_RANGES.find((r) => r.key === timeRange);
-    if (!range || range.months === 0) return null;
-    const d = new Date();
-    d.setMonth(d.getMonth() - range.months);
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [timeRange]);
-
-  const inRange = (dateStr: string) => {
-    if (!cutoffDate) return true;
-    return new Date(dateStr) >= cutoffDate;
-  };
-
-  // Filtered data
-  const filteredProfiles = useMemo(() => {
-    let data = rawProfiles;
-    if (cutoffDate) data = data.filter((p) => inRange(p.created_at));
-    if (gradeFilter !== "all") data = data.filter((p) => p.grade_id === gradeFilter);
-    return data;
-  }, [rawProfiles, cutoffDate, gradeFilter]);
-
-  const filteredPayments = useMemo(() => {
-    if (!cutoffDate) return rawPayments;
-    return rawPayments.filter((p) => inRange(p.created_at));
-  }, [rawPayments, cutoffDate]);
-
-  const filteredSubs = useMemo(() => {
-    let data = rawSubs;
-    if (cutoffDate) data = data.filter((s) => inRange(s.created_at));
-    if (gradeFilter !== "all") data = data.filter((s) => s.grade_id === gradeFilter);
-    return data;
-  }, [rawSubs, cutoffDate, gradeFilter]);
-
-  // Monthly chart data
-  const monthlyData = useMemo(() => {
-    const range = TIME_RANGES.find((r) => r.key === timeRange);
-    const monthsBack = range?.months || 12;
-    const now = new Date();
-    const data: MonthlyData[] = [];
-    for (let i = (monthsBack || 24) - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = `${MONTHS_AR[d.getMonth()]} ${d.getFullYear() % 100}`;
-
-      const rev = filteredPayments
-        .filter((p) => p.created_at?.startsWith(yearMonth))
-        .reduce((s, p) => s + Number(p.amount), 0);
-
-      const stu = filteredProfiles
-        .filter((p) => p.created_at?.startsWith(yearMonth)).length;
-
-      data.push({ month: label, revenue: rev, students: stu });
-    }
-    return data;
-  }, [filteredPayments, filteredProfiles, timeRange]);
-
-  // Governorate data
-  const govData = useMemo(() => {
-    const govCount: Record<string, number> = {};
-    filteredProfiles.forEach((p) => {
-      const gov = p.governorate || "غير محدد";
-      govCount[gov] = (govCount[gov] || 0) + 1;
-    });
-    return Object.entries(govCount)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [filteredProfiles]);
-
-  // School data
-  const schoolData = useMemo(() => {
-    const schoolCount: Record<string, { count: number; governorate: string }> = {};
-    filteredProfiles.forEach((p) => {
-      if (p.school_name?.trim()) {
-        const key = p.school_name.trim();
-        if (!schoolCount[key]) schoolCount[key] = { count: 0, governorate: p.governorate || "غير محدد" };
-        schoolCount[key].count++;
-      }
-    });
-    return Object.entries(schoolCount)
-      .map(([name, { count, governorate }]) => ({ name, count, governorate }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
-  }, [filteredProfiles]);
-
-  // Subscription status
-  const subStatusData = useMemo(() => {
-    const statusCount: Record<string, number> = {};
-    filteredSubs.forEach((s) => { statusCount[s.status] = (statusCount[s.status] || 0) + 1; });
-    const labels: Record<string, string> = { active: "نشط", pending: "معلق", expired: "منتهي" };
-    return Object.entries(statusCount).map(([k, v]) => ({ name: labels[k] || k, value: v }));
-  }, [filteredSubs]);
-
-  // Content data (not filtered by time/grade)
-  const contentData = useMemo(() => [
-    { name: "الصفوف", count: grades.length },
-    { name: "المواد", count: subjectsData.length },
-    { name: "الدروس", count: lessonsData.length },
-    { name: "الأسئلة", count: questionsCount },
-  ], [grades, subjectsData, lessonsData, questionsCount]);
-
-  // Grade breakdown (not filtered by grade)
-  const gradeData = useMemo(() =>
-    grades.map((g) => {
-      const gradeSubjects = subjectsData.filter((s: any) => s.grade_id === g.id);
-      const subjectIds = new Set(gradeSubjects.map((s: any) => s.id));
-      const gradeLessons = lessonsData.filter((l: any) => subjectIds.has(l.subject_id));
-      return { grade: g.name, subjects: gradeSubjects.length, lessons: gradeLessons.length };
-    }),
-  [grades, subjectsData, lessonsData]);
 
   const activeFiltersCount = [timeRange !== "12m", gradeFilter !== "all"].filter(Boolean).length;
 
@@ -259,7 +208,6 @@ const AdminReports = () => {
   }
 
   const totalRevenue = monthlyData.reduce((s, m) => s + m.revenue, 0);
-  const totalStudents = filteredProfiles.length;
   const totalContent = contentData.reduce((s, c) => s + c.count, 0);
   const govWithData = govData.filter((g) => g.name !== "غير محدد").length;
 
