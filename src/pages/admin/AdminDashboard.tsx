@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   GraduationCap, BookOpen, FileText, HelpCircle, CreditCard,
   Users, TrendingUp, DollarSign, UserCheck, Clock, Download,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,7 @@ const AdminDashboard = () => {
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
   const [exporting, setExporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadAllStats();
@@ -62,6 +64,19 @@ const AdminDashboard = () => {
     setRecentPayments(recentPay.data || []);
     setLoading(false);
   };
+
+  const handleManualRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await supabase.rpc("refresh_dashboard_stats");
+      await loadAllStats();
+      toast({ title: "تم تحديث الإحصائيات بنجاح" });
+    } catch {
+      toast({ title: "فشل تحديث الإحصائيات", variant: "destructive" });
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const summaryCards = [
     { label: "إجمالي الطلاب", value: stats.totalStudents, icon: Users, color: "text-primary", bg: "bg-primary/10" },
@@ -168,6 +183,10 @@ const AdminDashboard = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground">لوحة الإحصائيات</h1>
         <div className="flex flex-wrap gap-2">
+          <Button variant="default" size="sm" className="gap-1.5" disabled={refreshing} onClick={handleManualRefresh}>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "جاري التحديث..." : "تحديث الإحصائيات"}
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" disabled={!!exporting} onClick={exportStudents}>
             <Download className="h-3.5 w-3.5" />
             {exporting === "students" ? "جاري التصدير..." : "تصدير الطلاب"}
