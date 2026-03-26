@@ -69,10 +69,18 @@ const AdminQuestions = () => {
   // Form cascading
   const [formGrade, setFormGrade] = useState("");
 
-  // Import
+  // Import (independent filters)
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<any[] | null>(null);
+  const [importGrade, setImportGrade] = useState("");
+  const [importSemester, setImportSemester] = useState("");
+  const [importSubject, setImportSubject] = useState("");
+  const [importLesson, setImportLesson] = useState("");
+  const [importType, setImportType] = useState("lesson");
+
+  const importSubjects = importGrade ? allSubjects.filter(s => s.grade_id === importGrade) : [];
+  const importLessons = importSubject ? allLessons.filter(l => l.subject_id === importSubject) : [];
 
   useEffect(() => { loadRefs(); }, []);
   useEffect(() => { loadQuestions(); }, [page, searchTerm, filterType, filterGrade, filterSubject, filterSemester, filterLesson]);
@@ -320,10 +328,10 @@ const AdminQuestions = () => {
           correct_index: correctIndex,
           explanation: findCol(row, colMap.explanation) || null,
           unit: findCol(row, colMap.unit) || null,
-          subject_id: filterSubject || null,
-          lesson_id: filterLesson || null,
-          semester: filterSemester ? parseInt(filterSemester) : null,
-          question_type: filterType || "lesson",
+          subject_id: importSubject || null,
+          lesson_id: importLesson || null,
+          semester: importSemester ? parseInt(importSemester) : null,
+          question_type: importType || "lesson",
           sort_order: 0,
         });
       }
@@ -484,7 +492,16 @@ const AdminQuestions = () => {
           <Button variant="outline" size="sm" onClick={() => exportQuestions("xlsx")} disabled={exporting} className="gap-1.5">
             <FileSpreadsheet className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير Excel"}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => {
+            setImportDialogOpen(true);
+            setImportFile(null);
+            setImportPreview(null);
+            setImportGrade("");
+            setImportSubject("");
+            setImportLesson("");
+            setImportSemester("");
+            setImportType("lesson");
+          }} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
           </Button>
           <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
@@ -691,29 +708,36 @@ const AdminQuestions = () => {
             <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
               <p className="text-sm font-semibold text-foreground">إضافة الأسئلة المستوردة إلى:</p>
               <div className="grid grid-cols-2 gap-3">
-                <select value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)}
+                <select value={importSemester} onChange={(e) => setImportSemester(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm">
                   <option value="">بدون فصل</option>
                   <option value="1">الفصل الأول</option>
                   <option value="2">الفصل الثاني</option>
                 </select>
-                <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
+                <select value={importType} onChange={(e) => setImportType(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm">
                   {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
-                <select value={filterSubject} onChange={(e) => { setFilterSubject(e.target.value); setFilterLesson(""); }}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">بدون مادة</option>
-                  {allSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <select value={importGrade} onChange={(e) => {
+                  setImportGrade(e.target.value); setImportSubject(""); setImportLesson("");
+                }} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">اختر الصف</option>
+                  {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
-                <select value={filterLesson} onChange={(e) => setFilterLesson(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select value={importSubject} onChange={(e) => { setImportSubject(e.target.value); setImportLesson(""); }}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm" disabled={!importGrade}>
+                  <option value="">اختر المادة</option>
+                  {importSubjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <select value={importLesson} onChange={(e) => setImportLesson(e.target.value)}
+                  className="col-span-2 rounded-md border border-input bg-background px-3 py-2 text-sm" disabled={!importSubject}>
                   <option value="">بدون درس</option>
-                  {(filterSubject ? allLessons.filter(l => l.subject_id === filterSubject) : allLessons).map((l) => (
-                    <option key={l.id} value={l.id}>{l.title}</option>
-                  ))}
+                  {importLessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
                 </select>
               </div>
+              {!importSubject && (
+                <p className="text-xs text-destructive/80">⚠️ يُفضل تحديد الصف والمادة قبل الاستيراد</p>
+              )}
             </div>
 
             {/* File upload */}
