@@ -31,6 +31,7 @@ const AiTutorPage = lazy(() => import("./pages/AiTutorPage.tsx"));
 const AboutPage = lazy(() => import("./pages/AboutPage.tsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.tsx"));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage.tsx"));
+const InstallPage = lazy(() => import("./pages/InstallPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout.tsx"));
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/unsubscribe" element={<UnsubscribePage />} />
+              <Route path="/install" element={<InstallPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
