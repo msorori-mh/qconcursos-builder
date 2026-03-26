@@ -38,6 +38,7 @@ const StudentReportsPage = () => {
   const [subjects, setSubjects] = useState<SubjectProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [certificatesCount, setCertificatesCount] = useState(0);
+  const [profileInfo, setProfileInfo] = useState<{ governorate: string | null; school_name: string | null; full_name: string | null } | null>(null);
 
   useEffect(() => {
     if (user) loadData();
@@ -46,15 +47,17 @@ const StudentReportsPage = () => {
   const loadData = async () => {
     if (!user) return;
 
-    const [progressRes, lessonsRes, subjectsRes, gradesRes, certsRes] = await Promise.all([
+    const [progressRes, lessonsRes, subjectsRes, gradesRes, certsRes, profileRes] = await Promise.all([
       supabase.from("user_progress").select("lesson_id, completed, quiz_score, completed_at").eq("user_id", user.id),
       supabase.from("lessons").select("id, subject_id"),
       supabase.from("subjects").select("id, name, grade_id"),
       supabase.from("grades").select("id, name"),
       supabase.from("certificates").select("id").eq("user_id", user.id),
+      supabase.from("profiles").select("full_name, governorate, school_name").eq("user_id", user.id).maybeSingle(),
     ]);
 
     setCertificatesCount(certsRes.data?.length || 0);
+    if (profileRes.data) setProfileInfo(profileRes.data as any);
 
     const progressData = progressRes.data || [];
     const lessonsData = lessonsRes.data || [];
@@ -126,14 +129,30 @@ const StudentReportsPage = () => {
 
       <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hero-gradient">
-            <BarChart3 className="h-5 w-5 text-primary-foreground" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hero-gradient">
+              <BarChart3 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">تقاريري</h1>
+              <p className="text-sm text-muted-foreground">ملخص أدائك وتقدمك الدراسي</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">تقاريري</h1>
-            <p className="text-sm text-muted-foreground">ملخص أدائك وتقدمك الدراسي</p>
-          </div>
+          {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
+            <div className="flex flex-wrap gap-2">
+              {profileInfo.governorate && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                  📍 {profileInfo.governorate}
+                </span>
+              )}
+              {profileInfo.school_name && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent/5 border border-accent/10 px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                  🏫 {profileInfo.school_name}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (
