@@ -457,7 +457,10 @@ const AdminQuestions = () => {
           <h1 className="text-xl font-bold text-foreground">إدارة الأسئلة</h1>
           <p className="text-sm text-muted-foreground">{totalCount} سؤال</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => exportQuestions("csv")} disabled={exporting} className="gap-1.5">
+            <Download className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير CSV"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
           </Button>
