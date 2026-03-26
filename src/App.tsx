@@ -29,6 +29,7 @@ const SchedulePage = lazy(() => import("./pages/SchedulePage.tsx"));
 const StudyPlanPage = lazy(() => import("./pages/StudyPlanPage.tsx"));
 const AchievementsPage = lazy(() => import("./pages/AchievementsPage.tsx"));
 const AiTutorPage = lazy(() => import("./pages/AiTutorPage.tsx"));
+const AdaptiveLearningPage = lazy(() => import("./pages/AdaptiveLearningPage.tsx"));
 const AboutPage = lazy(() => import("./pages/AboutPage.tsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.tsx"));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage.tsx"));
@@ -95,6 +96,7 @@ const App = () => (
               <Route path="/reports" element={<ProtectedRoute><StudentReportsPage /></ProtectedRoute>} />
               <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
               <Route path="/study-plan" element={<ProtectedRoute><StudyPlanPage /></ProtectedRoute>} />
+              <Route path="/adaptive" element={<ProtectedRoute><AdaptiveLearningPage /></ProtectedRoute>} />
               <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
               <Route path="/ai-tutor" element={<ProtectedRoute><AiTutorPage /></ProtectedRoute>} />
 
