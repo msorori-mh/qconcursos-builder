@@ -48,6 +48,7 @@ const AdminSubscriptionPlans = lazy(() => import("./pages/admin/AdminSubscriptio
 const AdminStudents = lazy(() => import("./pages/admin/AdminStudents.tsx"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports.tsx"));
 const AdminContactMessages = lazy(() => import("./pages/admin/AdminContactMessages.tsx"));
+const AdminAiStats = lazy(() => import("./pages/admin/AdminAiStats.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +114,7 @@ const App = () => (
                 <Route path="subscription-plans" element={<AdminSubscriptionPlans />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="messages" element={<AdminContactMessages />} />
+                <Route path="ai-stats" element={<AdminAiStats />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
