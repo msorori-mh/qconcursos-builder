@@ -245,6 +245,29 @@ const AuthPage = () => {
                 </select>
               </div>
               <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">المحافظة <span className="text-destructive">*</span></label>
+                <select
+                  value={governorate}
+                  onChange={(e) => setGovernorate(e.target.value)}
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="" disabled>اختر محافظتك</option>
+                  {YEMEN_GOVERNORATES.map((gov) => (
+                    <option key={gov} value={gov}>{gov}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">اسم المدرسة</label>
+                <Input
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="أدخل اسم مدرستك"
+                  className="text-right"
+                />
+              </div>
+              <div>
                 <label className="mb-1.5 block text-sm font-medium text-card-foreground">رمز الإحالة <span className="text-muted-foreground font-normal">(اختياري)</span></label>
                 <Input
                   value={referralCode}
