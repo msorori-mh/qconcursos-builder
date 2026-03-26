@@ -736,7 +736,7 @@ const AdminQuestions = () => {
                 </select>
               </div>
               {!importSubject && (
-                <p className="text-xs text-amber-600">⚠️ يُفضل تحديد الصف والمادة قبل الاستيراد</p>
+                <p className="text-xs text-destructive/80">⚠️ يُفضل تحديد الصف والمادة قبل الاستيراد</p>
               )}
             </div>
 
