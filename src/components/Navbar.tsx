@@ -23,7 +23,10 @@ const Navbar = () => {
       { href: "/about", label: "من نحن" },
       { href: "/contact", label: "تواصل معنا" },
     ] : []),
-    ...(user && !isAdmin ? [{ href: "/reports", label: "تقاريري" }] : []),
+    ...(user && !isAdmin ? [
+      { href: "/reports", label: "تقاريري" },
+      { href: "/schedule", label: "جدولي" },
+    ] : []),
     ...(isAdmin ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
   ];
 
