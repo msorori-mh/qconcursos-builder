@@ -5,13 +5,17 @@ import {
 } from "recharts";
 import {
   TrendingUp, DollarSign, Users, BookOpen, FileText, HelpCircle,
-  GraduationCap, Calendar,
+  GraduationCap, Calendar, MapPin, School,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = [
   "hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--success))",
   "hsl(var(--destructive))", "hsl(var(--warning, 40 96% 50%))",
+  "#6366f1", "#f59e0b", "#06b6d4", "#ec4899", "#8b5cf6",
+  "#14b8a6", "#f97316", "#84cc16", "#e11d48", "#0ea5e9",
+  "#a855f7", "#22c55e", "#ef4444", "#3b82f6", "#eab308",
+  "#64748b", "#d946ef",
 ];
 
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -19,12 +23,16 @@ const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو
 interface MonthlyData { month: string; revenue: number; students: number; }
 interface ContentData { name: string; count: number; }
 interface GradeSubData { grade: string; subjects: number; lessons: number; }
+interface GovData { name: string; count: number; }
+interface SchoolData { name: string; count: number; governorate: string; }
 
 const AdminReports = () => {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [contentData, setContentData] = useState<ContentData[]>([]);
   const [gradeData, setGradeData] = useState<GradeSubData[]>([]);
   const [subStatusData, setSubStatusData] = useState<{ name: string; value: number }[]>([]);
+  const [govData, setGovData] = useState<GovData[]>([]);
+  const [schoolData, setSchoolData] = useState<SchoolData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +42,7 @@ const AdminReports = () => {
   const loadReports = async () => {
     const [payments, profiles, grades, subjects, lessons, questions, subscriptions] = await Promise.all([
       supabase.from("payment_requests").select("amount, status, created_at").eq("status", "approved"),
-      supabase.from("profiles").select("created_at"),
+      supabase.from("profiles").select("created_at, governorate, school_name"),
       supabase.from("grades").select("id, name"),
       supabase.from("subjects").select("id, grade_id"),
       supabase.from("lessons").select("id, subject_id"),
@@ -88,6 +96,34 @@ const AdminReports = () => {
       Object.entries(statusCount).map(([k, v]) => ({ name: statusLabels[k] || k, value: v }))
     );
 
+    // Governorate distribution
+    const govCount: Record<string, number> = {};
+    (profiles.data || []).forEach((p: any) => {
+      const gov = p.governorate || "غير محدد";
+      govCount[gov] = (govCount[gov] || 0) + 1;
+    });
+    const govSorted = Object.entries(govCount)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    setGovData(govSorted);
+
+    // School distribution (top 15)
+    const schoolCount: Record<string, { count: number; governorate: string }> = {};
+    (profiles.data || []).forEach((p: any) => {
+      if (p.school_name?.trim()) {
+        const key = p.school_name.trim();
+        if (!schoolCount[key]) {
+          schoolCount[key] = { count: 0, governorate: p.governorate || "غير محدد" };
+        }
+        schoolCount[key].count++;
+      }
+    });
+    const schoolSorted = Object.entries(schoolCount)
+      .map(([name, { count, governorate }]) => ({ name, count, governorate }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
+    setSchoolData(schoolSorted);
+
     setLoading(false);
   };
 
@@ -102,6 +138,7 @@ const AdminReports = () => {
   const totalRevenue = monthlyData.reduce((s, m) => s + m.revenue, 0);
   const totalStudents = monthlyData.reduce((s, m) => s + m.students, 0);
   const totalContent = contentData.reduce((s, c) => s + c.count, 0);
+  const govWithData = govData.filter((g) => g.name !== "غير محدد").length;
 
   return (
     <div className="space-y-6">
@@ -111,11 +148,82 @@ const AdminReports = () => {
       </div>
 
       {/* Summary */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard icon={DollarSign} label="إجمالي الإيرادات" value={`${totalRevenue.toLocaleString("ar-YE")} ر.ي`} color="text-accent" bg="bg-accent/10" />
         <SummaryCard icon={Users} label="إجمالي التسجيلات" value={totalStudents} color="text-primary" bg="bg-primary/10" />
         <SummaryCard icon={BookOpen} label="إجمالي المحتوى" value={totalContent} color="text-success" bg="bg-success/10" />
+        <SummaryCard icon={MapPin} label="محافظات مسجلة" value={govWithData} color="text-destructive" bg="bg-destructive/10" />
       </div>
+
+      {/* Governorate Distribution */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ChartCard title="توزيع الطلاب حسب المحافظة" icon={<MapPin className="h-4 w-4 text-primary" />}>
+          {govData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={govData} layout="vertical" margin={{ right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
+                <Tooltip formatter={(v: number) => [`${v} طالب`, "العدد"]} />
+                <Bar dataKey="count" radius={[0, 6, 6, 0]} name="عدد الطلاب">
+                  {govData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">لا توجد بيانات</p>
+          )}
+        </ChartCard>
+
+        <ChartCard title="نسب المحافظات" icon={<MapPin className="h-4 w-4 text-accent" />}>
+          {govData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={govData.filter((g) => g.name !== "غير محدد").slice(0, 10)}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={100}
+                  dataKey="count"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ strokeWidth: 1 }}
+                >
+                  {govData.slice(0, 10).map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => [`${v} طالب`, "العدد"]} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">لا توجد بيانات</p>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Top Schools */}
+      {schoolData.length > 0 && (
+        <ChartCard title="أكثر المدارس تسجيلاً (أفضل 15)" icon={<School className="h-4 w-4 text-success" />}>
+          <ResponsiveContainer width="100%" height={Math.max(280, schoolData.length * 36)}>
+            <BarChart data={schoolData} layout="vertical" margin={{ right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+              <Tooltip
+                formatter={(v: number) => [`${v} طالب`, "العدد"]}
+                labelFormatter={(label) => {
+                  const s = schoolData.find((d) => d.name === label);
+                  return s ? `${label} — ${s.governorate}` : label;
+                }}
+              />
+              <Bar dataKey="count" fill="hsl(var(--success))" radius={[0, 6, 6, 0]} name="عدد الطلاب" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
 
       {/* Monthly Revenue Chart */}
       <ChartCard title="الإيرادات الشهرية" icon={<DollarSign className="h-4 w-4 text-accent" />}>
