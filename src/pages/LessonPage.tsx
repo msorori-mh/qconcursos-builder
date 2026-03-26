@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import {
   ArrowLeft, ArrowRight, FileText, Play, BookOpen, Lock,
   ChevronRight, ChevronLeft, Download, Maximize2, CheckCircle2,
-  Clock, Eye, Bot,
+  Clock, Eye, Bot, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import LessonQuiz from "@/components/LessonQuiz";
 import { getEmbedUrl, getCdnUrl } from "@/lib/cdn";
 import { Progress } from "@/components/ui/progress";
 const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
+const LessonDiscussion = lazy(() => import("@/components/LessonDiscussion"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
@@ -178,7 +179,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
 
   // Determine default tab based on lesson content
-  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai">("video");
+  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai" | "discussion">("video");
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -300,6 +301,7 @@ const LessonPage = () => {
       ? [{ id: "content" as const, label: "الملخص", icon: FileText }]
       : []),
     ...(questions.length > 0 ? [{ id: "quiz" as const, label: `الأسئلة (${questions.length})`, icon: BookOpen }] : []),
+    { id: "discussion" as const, label: "النقاش", icon: MessageCircle },
     { id: "ai" as const, label: "المساعد الذكي", icon: Bot },
   ];
 
@@ -449,6 +451,12 @@ const LessonPage = () => {
                   lessonContent: lesson.content_text || undefined,
                 }}
               />
+            </Suspense>
+          )}
+
+          {activeTab === "discussion" && (
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+              <LessonDiscussion lessonId={lessonId!} />
             </Suspense>
           )}
         </div>
