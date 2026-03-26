@@ -362,6 +362,92 @@ const AdminQuestions = () => {
     URL.revokeObjectURL(url);
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  const exportQuestions = async (format: "csv" | "xlsx") => {
+    setExporting(true);
+    try {
+      // Build query with current filters
+      let query = supabase
+        .from("questions")
+        .select("*, lessons(title), subjects(name)")
+        .order("sort_order");
+
+      if (searchTerm.trim()) query = query.ilike("question_text", `%${searchTerm.trim()}%`);
+      if (filterType) query = query.eq("question_type", filterType);
+      if (filterSubject) query = query.eq("subject_id", filterSubject);
+      if (filterLesson) query = query.eq("lesson_id", filterLesson);
+      if (filterSemester) query = query.eq("semester", parseInt(filterSemester));
+      if (filterGrade && !filterSubject) {
+        const gradeSubjectIds = allSubjects.filter(s => s.grade_id === filterGrade).map(s => s.id);
+        if (gradeSubjectIds.length > 0) query = query.in("subject_id", gradeSubjectIds);
+        else { setExporting(false); return; }
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast({ title: "لا توجد أسئلة للتصدير", variant: "destructive" });
+        setExporting(false);
+        return;
+      }
+
+      const arabicLabels = ["أ", "ب", "ت", "ث"];
+      const headers = ["السؤال", "الخيار 1", "الخيار 2", "الخيار 3", "الخيار 4", "الإجابة الصحيحة", "الشرح", "المادة", "الدرس", "النوع", "الوحدة", "الفصل", "السنة"];
+
+      const escapeCSV = (val: string) => {
+        if (!val) return "";
+        if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+          return '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      };
+
+      const typeLabels: Record<string, string> = { lesson: "سؤال درس", exam: "اختبار شامل", bank: "بنك أسئلة" };
+
+      const rows = data.map((q: any) => {
+        const opts = Array.isArray(q.options) ? q.options : [];
+        return [
+          q.question_text || "",
+          opts[0] || "",
+          opts[1] || "",
+          opts[2] || "",
+          opts[3] || "",
+          arabicLabels[q.correct_index] || String(q.correct_index + 1),
+          q.explanation || "",
+          q.subjects?.name || "",
+          q.lessons?.title || "",
+          typeLabels[q.question_type] || q.question_type || "",
+          q.unit || "",
+          q.semester ? `الفصل ${q.semester}` : "",
+          q.year?.toString() || "",
+        ];
+      });
+
+      const bom = "\uFEFF";
+      const csvContent = bom + [headers, ...rows].map(r => r.map(escapeCSV).join(",")).join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const filterLabel = filterSubject
+        ? allSubjects.find(s => s.id === filterSubject)?.name || "أسئلة"
+        : filterGrade
+          ? grades.find(g => g.id === filterGrade)?.name || "أسئلة"
+          : "جميع_الأسئلة";
+      a.download = `${filterLabel}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: `تم تصدير ${data.length} سؤال بنجاح` });
+    } catch (e: any) {
+      toast({ title: "خطأ في التصدير", description: e.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
@@ -371,7 +457,10 @@ const AdminQuestions = () => {
           <h1 className="text-xl font-bold text-foreground">إدارة الأسئلة</h1>
           <p className="text-sm text-muted-foreground">{totalCount} سؤال</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => exportQuestions("csv")} disabled={exporting} className="gap-1.5">
+            <Download className="h-4 w-4" /> {exporting ? "جاري التصدير..." : "تصدير CSV"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
           </Button>
