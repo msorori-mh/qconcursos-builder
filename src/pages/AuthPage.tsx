@@ -9,6 +9,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import SEOHead from "@/components/SEOHead";
 
+const YEMEN_GOVERNORATES = [
+  "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة", "صعدة",
+  "صنعاء", "عمران", "المحويت", "ريمة", "البيضاء", "لحج", "أبين", "الضالع",
+  "شبوة", "حضرموت", "المهرة", "سقطرى", "مأرب", "الجوف",
+];
+
 const AuthPage = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [method, setMethod] = useState<"email" | "phone">("email");
@@ -17,6 +23,8 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [gradeId, setGradeId] = useState("");
+  const [governorate, setGovernorate] = useState("");
+  const [schoolName, setSchoolName] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,6 +62,8 @@ const AuthPage = () => {
   const saveGradeToProfile = async (userId: string) => {
     const updates: any = {};
     if (gradeId) updates.grade_id = gradeId;
+    if (governorate) updates.governorate = governorate;
+    if (schoolName.trim()) updates.school_name = schoolName.trim();
     if (referralCode.trim()) updates.referred_by = referralCode.trim().toUpperCase();
     if (Object.keys(updates).length > 0) {
       await supabase.from("profiles").update(updates).eq("user_id", userId);
