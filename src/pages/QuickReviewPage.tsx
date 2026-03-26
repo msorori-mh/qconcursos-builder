@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,10 @@ import { Progress } from "@/components/ui/progress";
 import ExamSimulator, { ExamQuestion } from "@/components/ExamSimulator";
 import {
   ArrowLeft, Zap, BookOpen, CheckCircle2, XCircle, FileText,
-  Play, ChevronDown, ChevronUp, Brain, Target, Clock,
+  Play, ChevronDown, ChevronUp, Brain, Target, Clock, Sparkles,
 } from "lucide-react";
+
+const AiLessonSummary = lazy(() => import("@/components/AiLessonSummary"));
 
 /* ─── Key Points Summary Card ─── */
 const LessonSummaryCard = ({
