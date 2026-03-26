@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
+import SendParentReport from "@/components/SendParentReport";
 import {
   BarChart3, BookOpen, CheckCircle2, Award, Target,
   TrendingUp, Clock, Star, Trophy,
@@ -139,6 +140,25 @@ const StudentReportsPage = () => {
               <p className="text-sm text-muted-foreground">ملخص أدائك وتقدمك الدراسي</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            {subjects.length > 0 && (
+              <SendParentReport
+                studentName={profileInfo?.full_name || "الطالب"}
+                overallPercent={overallPercent}
+                avgScore={overallAvg}
+                completedLessons={totalCompleted}
+                totalLessons={totalLessons}
+                subjectsCount={subjects.length}
+                certificatesCount={certificatesCount}
+                subjects={subjects.map((s) => ({
+                  name: s.subjectName,
+                  completionPercent: s.completionPercent,
+                  avgScore: s.avgScore,
+                  completedLessons: s.completedLessons,
+                  totalLessons: s.totalLessons,
+                }))}
+              />
+            )}
           {profileInfo && (profileInfo.governorate || profileInfo.school_name) && (
             <div className="flex flex-wrap gap-2">
               {profileInfo.governorate && (
