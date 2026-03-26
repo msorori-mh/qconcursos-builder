@@ -9,6 +9,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import SEOHead from "@/components/SEOHead";
 
+const YEMEN_GOVERNORATES = [
+  "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة", "صعدة",
+  "صنعاء", "عمران", "المحويت", "ريمة", "البيضاء", "لحج", "أبين", "الضالع",
+  "شبوة", "حضرموت", "المهرة", "سقطرى", "مأرب", "الجوف",
+];
+
 const AuthPage = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [method, setMethod] = useState<"email" | "phone">("email");
@@ -17,6 +23,8 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [gradeId, setGradeId] = useState("");
+  const [governorate, setGovernorate] = useState("");
+  const [schoolName, setSchoolName] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,6 +62,8 @@ const AuthPage = () => {
   const saveGradeToProfile = async (userId: string) => {
     const updates: any = {};
     if (gradeId) updates.grade_id = gradeId;
+    if (governorate) updates.governorate = governorate;
+    if (schoolName.trim()) updates.school_name = schoolName.trim();
     if (referralCode.trim()) updates.referred_by = referralCode.trim().toUpperCase();
     if (Object.keys(updates).length > 0) {
       await supabase.from("profiles").update(updates).eq("user_id", userId);
@@ -233,6 +243,29 @@ const AuthPage = () => {
                     </optgroup>
                   )}
                 </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">المحافظة <span className="text-destructive">*</span></label>
+                <select
+                  value={governorate}
+                  onChange={(e) => setGovernorate(e.target.value)}
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="" disabled>اختر محافظتك</option>
+                  {YEMEN_GOVERNORATES.map((gov) => (
+                    <option key={gov} value={gov}>{gov}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-card-foreground">اسم المدرسة</label>
+                <Input
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="أدخل اسم مدرستك"
+                  className="text-right"
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-card-foreground">رمز الإحالة <span className="text-muted-foreground font-normal">(اختياري)</span></label>

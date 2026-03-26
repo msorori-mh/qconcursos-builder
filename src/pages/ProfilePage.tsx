@@ -19,12 +19,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useRef } from "react";
 
 /* ─── Types ─── */
+const YEMEN_GOVERNORATES = [
+  "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة", "صعدة",
+  "صنعاء", "عمران", "المحويت", "ريمة", "البيضاء", "لحج", "أبين", "الضالع",
+  "شبوة", "حضرموت", "المهرة", "سقطرى", "مأرب", "الجوف",
+];
+
 interface Profile {
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
   grade_id: string | null;
   referral_code: string | null;
+  governorate: string | null;
+  school_name: string | null;
 }
 
 interface Subscription {
@@ -79,7 +87,7 @@ const ProfilePage = () => {
 
   // Edit states
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: "", phone: "", grade_id: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", grade_id: "", governorate: "", school_name: "" });
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ newPass: "", confirm: "" });
   const [savingPassword, setSavingPassword] = useState(false);
@@ -113,7 +121,7 @@ const ProfilePage = () => {
   const loadAllData = async () => {
     if (!user) return;
     const [profileRes, subsRes, progressRes, certsRes, lessonsRes, subjectsRes, gradesRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id, referral_code").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("full_name, phone, avatar_url, grade_id, referral_code, governorate, school_name").eq("user_id", user.id).maybeSingle(),
       supabase.from("subscriptions").select("id, status, starts_at, expires_at, grades(name)").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("user_progress").select("lesson_id, completed, quiz_score, completed_at, lessons(title, subjects(name, grades(name)))").eq("user_id", user.id).order("completed_at", { ascending: false }).limit(50),
       supabase.from("certificates" as any).select("id, subject_id, issued_at, subjects(name, grades(name))").eq("user_id", user.id).order("issued_at", { ascending: false }),
@@ -124,7 +132,7 @@ const ProfilePage = () => {
 
     if (profileRes.data) {
       setProfile(profileRes.data as Profile);
-      setEditForm({ full_name: profileRes.data.full_name || "", phone: profileRes.data.phone || "", grade_id: profileRes.data.grade_id || "" });
+      setEditForm({ full_name: profileRes.data.full_name || "", phone: profileRes.data.phone || "", grade_id: profileRes.data.grade_id || "", governorate: (profileRes.data as any).governorate || "", school_name: (profileRes.data as any).school_name || "" });
     }
     setSubscriptions((subsRes.data as any) || []);
     setRecentProgress((progressRes.data as any) || []);
@@ -156,9 +164,9 @@ const ProfilePage = () => {
   /* ─── Handlers ─── */
   const saveProfile = async () => {
     if (!user) return;
-    const { error } = await supabase.from("profiles").update({ full_name: editForm.full_name || null, phone: editForm.phone || null, grade_id: editForm.grade_id || null }).eq("user_id", user.id);
+    const { error } = await supabase.from("profiles").update({ full_name: editForm.full_name || null, phone: editForm.phone || null, grade_id: editForm.grade_id || null, governorate: editForm.governorate || null, school_name: editForm.school_name || null }).eq("user_id", user.id);
     if (error) { toast({ title: "خطأ", description: error.message, variant: "destructive" }); return; }
-    setProfile((p) => p ? { ...p, full_name: editForm.full_name, phone: editForm.phone, grade_id: editForm.grade_id } : p);
+    setProfile((p) => p ? { ...p, full_name: editForm.full_name, phone: editForm.phone, grade_id: editForm.grade_id, governorate: editForm.governorate, school_name: editForm.school_name } : p);
     setEditing(false);
     await refreshProfile();
     toast({ title: "تم تحديث الملف الشخصي" });
@@ -631,6 +639,17 @@ const ProfilePage = () => {
                         )}
                       </select>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-card-foreground">المحافظة</label>
+                      <select value={editForm.governorate} onChange={(e) => setEditForm({ ...editForm, governorate: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="">اختر المحافظة</option>
+                        {YEMEN_GOVERNORATES.map((gov) => <option key={gov} value={gov}>{gov}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-card-foreground">اسم المدرسة</label>
+                      <Input value={editForm.school_name} onChange={(e) => setEditForm({ ...editForm, school_name: e.target.value })} placeholder="أدخل اسم مدرستك" />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -639,6 +658,8 @@ const ProfilePage = () => {
                       { label: "البريد الإلكتروني", value: user?.email || "—" },
                       { label: "الهاتف", value: profile?.phone || "—" },
                       { label: "الصف", value: grades.find((g) => g.id === profile?.grade_id)?.name || "—" },
+                      { label: "المحافظة", value: profile?.governorate || "—" },
+                      { label: "المدرسة", value: profile?.school_name || "—" },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
                         <span className="text-sm text-muted-foreground">{item.label}</span>
