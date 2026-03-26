@@ -295,11 +295,12 @@ const AdminReports = () => {
             <SlidersHorizontal className="h-4 w-4" />
             فلاتر التقارير
             {activeFiltersCount > 0 && (
-            <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full mr-1">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
+              <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full mr-1">
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Filters Bar */}
