@@ -4,7 +4,7 @@ import {
   CartesianGrid, Legend, PieChart, Pie, Cell,
 } from "recharts";
 import {
-  TrendingUp, DollarSign, Users, BookOpen, FileText,
+  TrendingUp, DollarSign, Users, BookOpen, FileText, Download,
   GraduationCap, Calendar, MapPin, School, SlidersHorizontal, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
