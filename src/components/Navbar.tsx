@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Menu, X, LogOut, User, BarChart3 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import PointsBadge from "@/components/PointsBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -27,6 +28,7 @@ const Navbar = () => {
       { href: "/reports", label: "تقاريري" },
       { href: "/schedule", label: "جدولي" },
       { href: "/study-plan", label: "المساعد الذكي" },
+      { href: "/achievements", label: "إنجازاتي" },
     ] : []),
     ...(isAdmin ? [{ href: "/admin", label: "لوحة التحكم" }] : []),
   ];
@@ -62,6 +64,7 @@ const Navbar = () => {
           {user ? (
             <div className="flex items-center gap-3">
               <ThemeToggle />
+              {!isAdmin && <PointsBadge />}
               <NotificationBell />
               <Link to="/profile" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
                 <User className="h-4 w-4" />
