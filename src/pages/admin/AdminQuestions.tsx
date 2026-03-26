@@ -69,10 +69,18 @@ const AdminQuestions = () => {
   // Form cascading
   const [formGrade, setFormGrade] = useState("");
 
-  // Import
+  // Import (independent filters)
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<any[] | null>(null);
+  const [importGrade, setImportGrade] = useState("");
+  const [importSemester, setImportSemester] = useState("");
+  const [importSubject, setImportSubject] = useState("");
+  const [importLesson, setImportLesson] = useState("");
+  const [importType, setImportType] = useState("lesson");
+
+  const importSubjects = importGrade ? allSubjects.filter(s => s.grade_id === importGrade) : [];
+  const importLessons = importSubject ? allLessons.filter(l => l.subject_id === importSubject) : [];
 
   useEffect(() => { loadRefs(); }, []);
   useEffect(() => { loadQuestions(); }, [page, searchTerm, filterType, filterGrade, filterSubject, filterSemester, filterLesson]);
