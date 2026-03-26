@@ -16,6 +16,7 @@ import {
   X,
   Tags,
   Brain,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ const sidebarLinks = [
   { href: "/admin/reports", label: "التقارير", icon: BarChart3 },
   { href: "/admin/messages", label: "رسائل التواصل", icon: MessageSquare },
   { href: "/admin/ai-stats", label: "إحصائيات AI", icon: Brain },
+  { href: "/admin/users", label: "المستخدمون الإداريون", icon: ShieldCheck },
 ];
 
 const AdminLayout = () => {
