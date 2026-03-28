@@ -106,7 +106,8 @@ const NotificationBell = () => {
     if (isOpen && unreadCount > 0) markAllRead();
   };
 
-  const typeIcon = (type: string) => {
+  const typeIcon = (type: string, n?: Notification) => {
+    if (n && isPaymentNotification(n)) return <CreditCard className="h-4 w-4 text-primary shrink-0" />;
     if (type === "success") return <CheckCircle className="h-4 w-4 text-success shrink-0" />;
     if (type === "error") return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
     return <Info className="h-4 w-4 text-accent shrink-0" />;
@@ -115,8 +116,11 @@ const NotificationBell = () => {
   return (
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
-        <button className="relative p-1.5 text-muted-foreground hover:text-primary transition-colors">
-          <Bell className="h-5 w-5" />
+        <button className={`relative p-1.5 text-muted-foreground hover:text-primary transition-colors ${pulse ? "animate-bounce" : ""}`}>
+          <Bell className={`h-5 w-5 ${pulse ? "text-primary" : ""}`} />
+          {pulse && (
+            <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+          )}
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -137,9 +141,9 @@ const NotificationBell = () => {
                 key={n.id}
                 className={`flex gap-3 px-4 py-3 border-b border-border last:border-0 ${
                   !n.is_read ? "bg-accent/5" : ""
-                }`}
+                } ${!n.is_read && isPaymentNotification(n) ? "bg-primary/5 border-r-2 border-r-primary" : ""}`}
               >
-                <div className="mt-0.5">{typeIcon(n.type)}</div>
+                <div className="mt-0.5">{typeIcon(n.type, n)}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground">{n.title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
