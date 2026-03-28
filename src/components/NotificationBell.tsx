@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Bell, CheckCircle, XCircle, Info } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Bell, CheckCircle, XCircle, Info, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -19,8 +20,48 @@ const NotificationBell = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch {}
+  }, []);
+
+  const isPaymentNotification = (n: Notification) =>
+    n.title.includes("طلب دفع") || n.title.includes("💳");
+
+  const handleNewNotification = useCallback((payload: any) => {
+    const n = payload.new as Notification;
+    setNotifications((prev) => [n, ...prev]);
+
+    if (isPaymentNotification(n)) {
+      playNotificationSound();
+      setPulse(true);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+      pulseTimeoutRef.current = setTimeout(() => setPulse(false), 5000);
+
+      toast(n.title, {
+        description: n.message,
+        icon: <CreditCard className="h-4 w-4 text-primary" />,
+        duration: 8000,
+      });
+    }
+  }, [playNotificationSound]);
 
   useEffect(() => {
     if (!user) return;
@@ -31,14 +72,15 @@ const NotificationBell = () => {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-        }
+        handleNewNotification
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+    return () => {
+      supabase.removeChannel(channel);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+    };
+  }, [user, handleNewNotification]);
 
   const loadNotifications = async () => {
     const { data } = await supabase
