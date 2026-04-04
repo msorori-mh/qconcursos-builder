@@ -1,11 +1,10 @@
 import { Link, useParams, Navigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, Lock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 const iconMap: Record<string, any> = {
