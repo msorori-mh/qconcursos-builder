@@ -1,11 +1,10 @@
 import { Link, useParams, Navigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, Lock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, Globe, FlaskConical, Atom, BookText, Dumbbell, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 const iconMap: Record<string, any> = {
@@ -176,10 +175,6 @@ const SubjectsPage = () => {
 
   const gradeName = grade?.name || "الصف الدراسي";
   const isThirdSec = grade?.slug === "grade-12";
-  const hasBranches = grade?.slug === "grade-11" || grade?.slug === "grade-12";
-
-  const sciOnly = hasBranches ? filteredSubjects.filter((s) => !s.slug.endsWith("-lit")) : [];
-  const litOnly = hasBranches ? filteredSubjects.filter((s) => s.slug.endsWith("-lit")) : [];
 
   if (shouldRedirect) {
     return <Navigate to={`/grades/${profile!.grade_id}/subjects`} replace />;
@@ -256,27 +251,6 @@ const SubjectsPage = () => {
           <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-card">
             <p className="text-muted-foreground">لم تُضاف مواد لهذا الصف بعد</p>
           </div>
-        ) : hasBranches ? (
-          <>
-            {sciOnly.length > 0 && (
-              <div className="mb-8">
-                <h2 className="mb-4 text-lg font-bold text-foreground flex items-center gap-2">
-                  <Atom className="h-5 w-5 text-primary" />
-                  الفرع العلمي
-                </h2>
-                <SubjectGrid subjects={sciOnly} gradeId={gradeId!} progressMap={progressMap} />
-              </div>
-            )}
-            {litOnly.length > 0 && (
-              <div className="mb-8">
-                <h2 className="mb-4 text-lg font-bold text-foreground flex items-center gap-2">
-                  <BookText className="h-5 w-5 text-accent" />
-                  الفرع الأدبي
-                </h2>
-                <SubjectGrid subjects={litOnly} gradeId={gradeId!} progressMap={progressMap} />
-              </div>
-            )}
-          </>
         ) : (
           <SubjectGrid subjects={filteredSubjects} gradeId={gradeId!} progressMap={progressMap} />
         )}
