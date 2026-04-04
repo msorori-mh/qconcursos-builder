@@ -733,6 +733,111 @@ const AdminLessons = () => {
         </DialogContent>
       </Dialog>
     </div>
+
+      {/* PDF Import Dialog */}
+      <Dialog open={pdfImportDialogOpen} onOpenChange={(open) => {
+        setPdfImportDialogOpen(open);
+        if (!open) { setPdfFile(null); setPdfParsedData(null); }
+      }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              استيراد فهرس المادة من PDF
+            </DialogTitle>
+            <DialogDescription>ارفع ملف PDF يحتوي على فهرس الكتاب وسيتم استخراج الدروس تلقائياً</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Target subject selection */}
+            <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">إضافة الدروس المستوردة إلى:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <select value={pdfGrade} onChange={(e) => { setPdfGrade(e.target.value); setPdfSubject(""); }}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">اختر الصف</option>
+                  {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                <select value={pdfSubject} onChange={(e) => setPdfSubject(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">اختر المادة *</option>
+                  {pdfFilteredSubjects.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              {!pdfSubject && (
+                <p className="text-xs text-destructive">⚠️ يجب اختيار المادة قبل الاستيراد</p>
+              )}
+            </div>
+
+            {/* PDF file upload */}
+            <div className="space-y-2">
+              <label className="cursor-pointer block">
+                <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-6 text-center transition-colors hover:border-primary/50">
+                  <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <p className="text-sm font-medium text-foreground">
+                    {pdfFile ? pdfFile.name : "اضغط لرفع ملف PDF (فهرس الكتاب)"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">سيتم تحليل الفهرس واستخراج الوحدات والدروس تلقائياً بالذكاء الاصطناعي</p>
+                </div>
+                <input type="file" accept="application/pdf" onChange={handlePdfFileChange} className="hidden" />
+              </label>
+
+              {pdfFile && !pdfParsedData && (
+                <Button variant="hero" className="w-full gap-2" onClick={parsePdfIndex} disabled={pdfParsing}>
+                  {pdfParsing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  {pdfParsing ? "جاري تحليل الفهرس..." : "تحليل الفهرس"}
+                </Button>
+              )}
+            </div>
+
+            {/* Parsed preview */}
+            {pdfParsedData && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-foreground">
+                  تم استخراج {pdfParsedData.units.reduce((s, u) => s + u.lessons.length, 0)} درس من {pdfParsedData.units.length} وحدة
+                </p>
+                <div className="max-h-[300px] overflow-auto rounded-xl border border-border">
+                  <div className="divide-y divide-border">
+                    {pdfParsedData.units.map((unit, ui) => (
+                      <div key={ui}>
+                        <div className="bg-muted px-3 py-2 sticky top-0">
+                          <span className="text-sm font-bold text-foreground">{unit.name}</span>
+                          <span className="text-xs text-muted-foreground mr-2">({unit.lessons.length} درس)</span>
+                        </div>
+                        {unit.lessons.map((lesson, li) => (
+                          <div key={li} className="flex items-center justify-between px-4 py-2 text-sm">
+                            <span>{lesson.title}</span>
+                            {lesson.semester && (
+                              <span className="text-[11px] bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                                ف{lesson.semester}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Button variant="hero" className="w-full gap-2" onClick={importPdfLessons}
+                  disabled={pdfImporting || !pdfSubject}>
+                  {pdfImporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {pdfImporting ? "جاري الاستيراد..." : `استيراد ${pdfParsedData.units.reduce((s, u) => s + u.lessons.length, 0)} درس`}
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
