@@ -50,6 +50,7 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports.tsx"));
 const AdminContactMessages = lazy(() => import("./pages/admin/AdminContactMessages.tsx"));
 const AdminAiStats = lazy(() => import("./pages/admin/AdminAiStats.tsx"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.tsx"));
+const AdminSimulations = lazy(() => import("./pages/admin/AdminSimulations.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -117,6 +118,7 @@ const App = () => (
                 <Route path="messages" element={<AdminContactMessages />} />
                 <Route path="ai-stats" element={<AdminAiStats />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="simulations" element={<AdminSimulations />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
