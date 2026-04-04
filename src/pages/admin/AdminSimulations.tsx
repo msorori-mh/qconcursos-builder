@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, FlaskConical } from "lucide-react";
+import { Plus, Pencil, Trash2, FlaskConical, Upload, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import * as XLSX from "xlsx";
 
 interface Grade { id: string; name: string }
 interface Subject { id: string; name: string; grade_id: string }
@@ -37,8 +38,10 @@ const AdminSimulations = () => {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [allLessons, setAllLessons] = useState<(Lesson & { subjects?: { name: string; grades?: { name: string } } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Simulation | null>(null);
   const [form, setForm] = useState(emptyForm);
 
@@ -47,22 +50,28 @@ const AdminSimulations = () => {
   const [filterSubject, setFilterSubject] = useState("");
   const [filterLesson, setFilterLesson] = useState("");
 
+  // Import state
+  const [importGrade, setImportGrade] = useState("");
+  const [importSubject, setImportSubject] = useState("");
+  const [importLessons, setImportLessons] = useState<Lesson[]>([]);
+
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: g }, { data: s }, { data: sims }] = await Promise.all([
+    const [{ data: g }, { data: s }, { data: sims }, { data: allL }] = await Promise.all([
       supabase.from("grades").select("id, name").order("sort_order"),
       supabase.from("subjects").select("id, name, grade_id").order("sort_order"),
       supabase.from("lesson_simulations").select("*, lessons(title, subjects(name, grades(name)))").order("sort_order"),
+      supabase.from("lessons").select("id, title, subject_id, subjects(name, grades(name))").order("sort_order"),
     ]);
     setGrades(g || []);
     setSubjects(s || []);
     setSimulations((sims as any) || []);
+    setAllLessons((allL as any) || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
 
-  // Fetch lessons when filter changes
   useEffect(() => {
     if (filterSubject) {
       supabase.from("lessons").select("id, title, subject_id").eq("subject_id", filterSubject).order("sort_order")
@@ -73,11 +82,22 @@ const AdminSimulations = () => {
     setFilterLesson("");
   }, [filterSubject]);
 
+  useEffect(() => { setFilterSubject(""); }, [filterGrade]);
+
+  // Import dialog lessons
   useEffect(() => {
-    setFilterSubject("");
-  }, [filterGrade]);
+    if (importSubject) {
+      supabase.from("lessons").select("id, title, subject_id").eq("subject_id", importSubject).order("sort_order")
+        .then(({ data }) => setImportLessons(data || []));
+    } else {
+      setImportLessons([]);
+    }
+  }, [importSubject]);
+
+  useEffect(() => { setImportSubject(""); }, [importGrade]);
 
   const filteredSubjects = filterGrade ? subjects.filter(s => s.grade_id === filterGrade) : subjects;
+  const importFilteredSubjects = importGrade ? subjects.filter(s => s.grade_id === importGrade) : [];
 
   const filteredSims = simulations.filter(sim => {
     if (filterLesson) return sim.lesson_id === filterLesson;
@@ -160,6 +180,135 @@ const AdminSimulations = () => {
     fetchAll();
   };
 
+  /* ─── Export ─── */
+  const handleExport = () => {
+    const dataToExport = filteredSims.map(sim => ({
+      "اسم التجربة": sim.title,
+      "رابط PhET": sim.phet_url,
+      "الوصف": sim.description || "",
+      "الترتيب": sim.sort_order,
+      "اسم الدرس": (sim as any).lessons?.title || "",
+      "اسم المادة": (sim as any).lessons?.subjects?.name || "",
+      "اسم الصف": (sim as any).lessons?.subjects?.grades?.name || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    ws["!cols"] = [
+      { wch: 30 }, { wch: 60 }, { wch: 40 }, { wch: 8 },
+      { wch: 30 }, { wch: 20 }, { wch: 20 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "التجارب المعملية");
+    XLSX.writeFile(wb, "simulations_export.xlsx");
+    toast({ title: "تم التصدير", description: `تم تصدير ${dataToExport.length} تجربة` });
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        "اسم التجربة": "مثال: بناء الذرة",
+        "رابط PhET": "https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_ar.html",
+        "الوصف": "وصف مختصر للتجربة",
+        "الترتيب": 0,
+        "اسم الدرس": "اسم الدرس كما هو في المنصة (يُستخدم للربط)",
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    ws["!cols"] = [{ wch: 30 }, { wch: 60 }, { wch: 40 }, { wch: 8 }, { wch: 35 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "قالب الاستيراد");
+    XLSX.writeFile(wb, "simulations_template.xlsx");
+  };
+
+  /* ─── Import ─── */
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
+
+        if (rows.length === 0) {
+          toast({ title: "خطأ", description: "الملف فارغ", variant: "destructive" });
+          return;
+        }
+
+        // Determine available lessons for matching
+        const availableLessons = importSubject ? importLessons : allLessons;
+
+        let inserted = 0;
+        let skipped = 0;
+        const errors: string[] = [];
+
+        for (const row of rows) {
+          const title = String(row["اسم التجربة"] || "").trim();
+          const phetUrl = String(row["رابط PhET"] || "").trim();
+          const description = String(row["الوصف"] || "").trim() || null;
+          const sortOrder = Number(row["الترتيب"]) || 0;
+          const lessonName = String(row["اسم الدرس"] || "").trim();
+
+          if (!title || !phetUrl) {
+            skipped++;
+            continue;
+          }
+
+          // Match lesson by name
+          let lessonId = "";
+          if (lessonName) {
+            const match = availableLessons.find(l => l.title === lessonName);
+            if (match) {
+              lessonId = match.id;
+            } else {
+              errors.push(`لم يتم العثور على الدرس: "${lessonName}"`);
+              skipped++;
+              continue;
+            }
+          } else {
+            skipped++;
+            errors.push(`صف بدون اسم درس: "${title}"`);
+            continue;
+          }
+
+          const { error } = await supabase.from("lesson_simulations").insert({
+            lesson_id: lessonId,
+            title,
+            phet_url: phetUrl,
+            description,
+            sort_order: sortOrder,
+          });
+
+          if (error) {
+            errors.push(`خطأ في "${title}": ${error.message}`);
+            skipped++;
+          } else {
+            inserted++;
+          }
+        }
+
+        toast({
+          title: "تم الاستيراد",
+          description: `تم إضافة ${inserted} تجربة، تم تخطي ${skipped}${errors.length > 0 ? `\n${errors.slice(0, 3).join("\n")}` : ""}`,
+          variant: errors.length > 0 ? "destructive" : "default",
+        });
+
+        fetchAll();
+        setImportDialogOpen(false);
+      } catch {
+        toast({ title: "خطأ", description: "فشل قراءة الملف", variant: "destructive" });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
+
   return (
     <div className="space-y-6" style={{ direction: "rtl" }}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -167,37 +316,33 @@ const AdminSimulations = () => {
           <FlaskConical className="h-6 w-6 text-primary" />
           إدارة التجارب المعملية
         </h1>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة تجربة
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4" />
+            استيراد
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport} disabled={filteredSims.length === 0}>
+            <Download className="h-4 w-4" />
+            تصدير ({filteredSims.length})
+          </Button>
+          <Button onClick={openCreate} size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            إضافة تجربة
+          </Button>
+        </div>
       </div>
 
       {/* Cascading Filters */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <select
-          className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
-          value={filterGrade}
-          onChange={e => setFilterGrade(e.target.value)}
-        >
+        <select className="rounded-lg border border-border bg-card px-3 py-2 text-sm" value={filterGrade} onChange={e => setFilterGrade(e.target.value)}>
           <option value="">كل الصفوف</option>
           {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
-        <select
-          className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
-          value={filterSubject}
-          onChange={e => setFilterSubject(e.target.value)}
-          disabled={!filterGrade}
-        >
+        <select className="rounded-lg border border-border bg-card px-3 py-2 text-sm" value={filterSubject} onChange={e => setFilterSubject(e.target.value)} disabled={!filterGrade}>
           <option value="">كل المواد</option>
           {filteredSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <select
-          className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
-          value={filterLesson}
-          onChange={e => setFilterLesson(e.target.value)}
-          disabled={!filterSubject}
-        >
+        <select className="rounded-lg border border-border bg-card px-3 py-2 text-sm" value={filterLesson} onChange={e => setFilterLesson(e.target.value)} disabled={!filterSubject}>
           <option value="">كل الدروس</option>
           {lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
         </select>
@@ -249,7 +394,7 @@ const AdminSimulations = () => {
         </div>
       )}
 
-      {/* Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg" style={{ direction: "rtl" }}>
           <DialogHeader>
@@ -259,7 +404,6 @@ const AdminSimulations = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
-            {/* Grade → Subject → Lesson selectors */}
             {!editing && (
               <>
                 <div>
@@ -306,6 +450,60 @@ const AdminSimulations = () => {
               <Input type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))} />
             </div>
             <Button onClick={handleSave} className="w-full">{editing ? "تحديث" : "إضافة"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-lg" style={{ direction: "rtl" }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              استيراد التجارب المعملية
+            </DialogTitle>
+            <DialogDescription>
+              استورد تجارب من ملف Excel. يتم مطابقة الدروس تلقائياً بالاسم.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {/* Optional: scope import to grade/subject */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">تحديد نطاق الاستيراد (اختياري)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm" value={importGrade} onChange={e => setImportGrade(e.target.value)}>
+                  <option value="">كل الصفوف</option>
+                  {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm" value={importSubject} onChange={e => setImportSubject(e.target.value)} disabled={!importGrade}>
+                  <option value="">كل المواد</option>
+                  {importFilteredSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">حدد الصف والمادة لتضييق نطاق البحث عن الدروس</p>
+            </div>
+
+            <div className="rounded-xl border-2 border-dashed border-border bg-muted/20 p-6 text-center">
+              <FileSpreadsheet className="mx-auto mb-3 h-10 w-10 text-primary/60" />
+              <p className="text-sm font-medium text-card-foreground mb-1">اختر ملف Excel للاستيراد</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                الأعمدة المطلوبة: اسم التجربة، رابط PhET، اسم الدرس
+              </p>
+              <label className="cursor-pointer">
+                <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} className="hidden" />
+                <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                  <span>
+                    <Upload className="h-4 w-4" />
+                    اختر ملف
+                  </span>
+                </Button>
+              </label>
+            </div>
+
+            <Button variant="ghost" size="sm" className="gap-1.5 w-full" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4" />
+              تنزيل قالب الاستيراد
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
