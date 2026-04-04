@@ -331,6 +331,110 @@ const AdminLessons = () => {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  // ─── PDF Import Handlers ───
+  const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPdfFile(file);
+    setPdfParsedData(null);
+  };
+
+  const parsePdfIndex = async () => {
+    if (!pdfFile) return;
+    setPdfParsing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/parse-pdf-index`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "فشل في تحليل الملف");
+
+      if (!data.units || !Array.isArray(data.units)) {
+        throw new Error("البيانات المستخرجة غير صالحة");
+      }
+
+      setPdfParsedData(data);
+      const totalLessons = data.units.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
+      toast({ title: `تم استخراج ${totalLessons} درس من ${data.units.length} وحدة` });
+    } catch (e: any) {
+      toast({ title: "خطأ في تحليل PDF", description: e.message, variant: "destructive" });
+    } finally {
+      setPdfParsing(false);
+    }
+  };
+
+  const importPdfLessons = async () => {
+    if (!pdfParsedData || !pdfSubject) {
+      toast({ title: "يرجى اختيار المادة أولاً", variant: "destructive" });
+      return;
+    }
+    setPdfImporting(true);
+    try {
+      const lessonsToInsert: any[] = [];
+      let globalOrder = 1;
+
+      for (const unit of pdfParsedData.units) {
+        for (const lesson of unit.lessons) {
+          const slug = `lesson-${globalOrder}-${lesson.title.replace(/\s+/g, "-").replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, "").slice(0, 30)}`;
+          lessonsToInsert.push({
+            title: lesson.title,
+            slug,
+            subject_id: pdfSubject,
+            sort_order: globalOrder,
+            semester: lesson.semester,
+            is_free: globalOrder === 1,
+            duration: null,
+            video_url: null,
+            content_text: `## ${lesson.title}\n\n**الوحدة:** ${unit.name}\n\n---\n\nمحتوى الدرس سيُضاف لاحقاً.`,
+            content_pdf_url: null,
+          });
+          globalOrder++;
+        }
+      }
+
+      if (lessonsToInsert.length === 0) {
+        toast({ title: "لم يتم العثور على دروس", variant: "destructive" });
+        setPdfImporting(false);
+        return;
+      }
+
+      let inserted = 0;
+      for (let i = 0; i < lessonsToInsert.length; i += 50) {
+        const batch = lessonsToInsert.slice(i, i + 50);
+        const { error } = await supabase.from("lessons").insert(batch);
+        if (error) {
+          toast({ title: "خطأ في الاستيراد", description: error.message, variant: "destructive" });
+          break;
+        }
+        inserted += batch.length;
+      }
+
+      // Update subject lessons_count
+      await supabase.from("subjects").update({ lessons_count: inserted }).eq("id", pdfSubject);
+
+      toast({ title: `تم استيراد ${inserted} درس بنجاح` });
+      setPdfImportDialogOpen(false);
+      setPdfFile(null);
+      setPdfParsedData(null);
+      loadLessons();
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    } finally {
+      setPdfImporting(false);
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
