@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import {
-  ArrowLeft, ArrowRight, FileText, Play, BookOpen, Lock,
+  ArrowLeft, FileText, Play, BookOpen, Lock,
   ChevronRight, ChevronLeft, Download, Maximize2, CheckCircle2,
-  Clock, Eye, Bot, MessageCircle,
+  Clock, Bot, MessageCircle, FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
