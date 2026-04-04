@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import {
-  ArrowLeft, ArrowRight, FileText, Play, BookOpen, Lock,
+  ArrowLeft, FileText, Play, BookOpen, Lock,
   ChevronRight, ChevronLeft, Download, Maximize2, CheckCircle2,
-  Clock, Eye, Bot, MessageCircle,
+  Clock, Bot, MessageCircle, FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
 const LessonDiscussion = lazy(() => import("@/components/LessonDiscussion"));
 const AiLessonSummary = lazy(() => import("@/components/AiLessonSummary"));
+const LabSimulation = lazy(() => import("@/components/LabSimulation"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
@@ -180,7 +181,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
 
   // Determine default tab based on lesson content
-  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai" | "discussion">("video");
+  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai" | "discussion" | "lab">("video");
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -287,6 +288,21 @@ const LessonPage = () => {
     enabled: !!lessonId,
   });
 
+  // Fetch simulations for this lesson
+  const { data: simulations = [] } = useQuery({
+    queryKey: ["lesson-simulations", lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lesson_simulations")
+        .select("id, title, description, phet_url, thumbnail_url")
+        .eq("lesson_id", lessonId!)
+        .order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!lessonId,
+  });
+
   // Set default tab based on available content
   useEffect(() => {
     if (lesson) {
@@ -302,6 +318,7 @@ const LessonPage = () => {
       ? [{ id: "content" as const, label: "الملخص", icon: FileText }]
       : []),
     ...(questions.length > 0 ? [{ id: "quiz" as const, label: `الأسئلة (${questions.length})`, icon: BookOpen }] : []),
+    ...(simulations.length > 0 ? [{ id: "lab" as const, label: `التجارب (${simulations.length})`, icon: FlaskConical }] : []),
     { id: "discussion" as const, label: "النقاش", icon: MessageCircle },
     { id: "ai" as const, label: "المساعد الذكي", icon: Bot },
   ];
@@ -456,6 +473,12 @@ const LessonPage = () => {
                   lessonContent: lesson.content_text || undefined,
                 }}
               />
+            </Suspense>
+          )}
+
+          {activeTab === "lab" && (
+            <Suspense fallback={<div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+              <LabSimulation simulations={simulations} />
             </Suspense>
           )}
 
