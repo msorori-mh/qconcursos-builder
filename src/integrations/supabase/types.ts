@@ -307,6 +307,47 @@ export type Database = {
           },
         ]
       }
+      lesson_simulations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          lesson_id: string
+          phet_url: string
+          sort_order: number
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lesson_id: string
+          phet_url: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lesson_id?: string
+          phet_url?: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_simulations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_summaries: {
         Row: {
           created_at: string
