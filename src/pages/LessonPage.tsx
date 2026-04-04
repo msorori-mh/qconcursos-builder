@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 const AiTutorChat = lazy(() => import("@/components/AiTutorChat"));
 const LessonDiscussion = lazy(() => import("@/components/LessonDiscussion"));
 const AiLessonSummary = lazy(() => import("@/components/AiLessonSummary"));
+const LabSimulation = lazy(() => import("@/components/LabSimulation"));
 
 /* ─── Video Player ─── */
 const VideoPlayer = ({ url }: { url: string }) => {
@@ -180,7 +181,7 @@ const LessonPage = () => {
   const queryClient = useQueryClient();
 
   // Determine default tab based on lesson content
-  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai" | "discussion">("video");
+  const [activeTab, setActiveTab] = useState<"video" | "content" | "quiz" | "ai" | "discussion" | "lab">("video");
 
   const { data: lesson, isLoading: lessonLoading, error: lessonError } = useQuery({
     queryKey: ["lesson", lessonId],
