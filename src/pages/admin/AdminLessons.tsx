@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search, Upload, Download, FileSpreadsheet } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +62,21 @@ const AdminLessons = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<any[] | null>(null);
+
+  // PDF Import
+  const [pdfImportDialogOpen, setPdfImportDialogOpen] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [pdfParsedData, setPdfParsedData] = useState<{ units: { name: string; lessons: { title: string; semester: number | null }[] }[] } | null>(null);
+  const [pdfImporting, setPdfImporting] = useState(false);
+
+  // PDF import grade/subject selectors (independent from main filters)
+  const [pdfGrade, setPdfGrade] = useState("");
+  const [pdfSubject, setPdfSubject] = useState("");
+
+  const pdfFilteredSubjects = pdfGrade
+    ? allSubjects.filter(s => s.grade_id === pdfGrade)
+    : allSubjects;
 
   useEffect(() => { loadRefs(); }, []);
   useEffect(() => { loadLessons(); }, [page, filterGrade, filterSemester, filterSubject, searchTerm]);
@@ -326,6 +341,9 @@ const AdminLessons = () => {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" /> استيراد
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setPdfImportDialogOpen(true)} className="gap-1.5">
+            <FileText className="h-4 w-4" /> استيراد من PDF
           </Button>
           <Button variant="hero" size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> إضافة درس
