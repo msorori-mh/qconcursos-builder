@@ -288,6 +288,21 @@ const LessonPage = () => {
     enabled: !!lessonId,
   });
 
+  // Fetch simulations for this lesson
+  const { data: simulations = [] } = useQuery({
+    queryKey: ["lesson-simulations", lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lesson_simulations")
+        .select("id, title, description, phet_url, thumbnail_url")
+        .eq("lesson_id", lessonId!)
+        .order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!lessonId,
+  });
+
   // Set default tab based on available content
   useEffect(() => {
     if (lesson) {
@@ -303,6 +318,7 @@ const LessonPage = () => {
       ? [{ id: "content" as const, label: "الملخص", icon: FileText }]
       : []),
     ...(questions.length > 0 ? [{ id: "quiz" as const, label: `الأسئلة (${questions.length})`, icon: BookOpen }] : []),
+    ...(simulations.length > 0 ? [{ id: "lab" as const, label: `التجارب (${simulations.length})`, icon: FlaskConical }] : []),
     { id: "discussion" as const, label: "النقاش", icon: MessageCircle },
     { id: "ai" as const, label: "المساعد الذكي", icon: Bot },
   ];
