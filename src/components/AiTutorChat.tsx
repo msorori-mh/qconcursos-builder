@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, Send, Loader2, AlertCircle, GraduationCap } from "lucide-react";
+import { Bot, Send, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -162,7 +162,7 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
     ? "flex flex-col h-[500px] rounded-2xl border border-border bg-card shadow-card overflow-hidden"
     : "flex flex-col h-[calc(100vh-12rem)] max-h-[700px] rounded-2xl border border-border bg-card shadow-card overflow-hidden";
 
-  const ModeIcon = config.icon;
+  
 
   return (
     <div className={containerClass} dir="rtl">
@@ -262,7 +262,7 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={mode === "support" ? "اكتب مشكلتك هنا..." : "اكتب سؤالك هنا..."}
+            placeholder="اكتب سؤالك هنا..."
             rows={1}
             className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary placeholder:text-muted-foreground"
             disabled={isLoading}
