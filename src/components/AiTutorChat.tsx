@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, Send, Sparkles, Loader2, AlertCircle, GraduationCap, Headphones } from "lucide-react";
+import { Bot, Send, Loader2, AlertCircle, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
-
 
 interface AiTutorChatProps {
   lessonContext?: {
@@ -19,36 +17,15 @@ interface AiTutorChatProps {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
 
-const MODE_CONFIG: Record<ChatMode, {
-  label: string;
-  icon: typeof GraduationCap;
-  subtitle: string;
-  welcome: string;
-  welcomeSub: string;
-  suggestions: string[];
-}> = {
-  tutor: {
-    label: "المساعد التعليمي",
-    icon: GraduationCap,
-    subtitle: "مساعدك الذكي في الدراسة",
-    welcome: "مرحباً! أنا تنوير AI 🤖",
-    welcomeSub: "اسألني أي سؤال عن دروسك وسأساعدك",
-    suggestions: ["ساعدني في فهم الرياضيات", "اشرح لي قواعد اللغة العربية", "كيف أراجع قبل الامتحان؟"],
-  },
-  support: {
-    label: "الدعم الفني",
-    icon: Headphones,
-    subtitle: "مساعدك في حل المشاكل التقنية",
-    welcome: "مرحباً! أنا هنا لمساعدتك 🛠️",
-    welcomeSub: "اسألني عن أي مشكلة تقنية تواجهك في المنصة",
-    suggestions: ["كيف أشترك في المنصة؟", "لا أستطيع تسجيل الدخول", "كيف أشاهد الدروس؟"],
-  },
+const TUTOR_CONFIG = {
+  subtitle: "مساعدك الذكي في الدراسة",
+  welcome: "مرحباً! أنا تنوير AI 🤖",
+  welcomeSub: "اسألني أي سؤال عن دروسك وسأساعدك",
+  suggestions: ["ساعدني في فهم الرياضيات", "اشرح لي قواعد اللغة العربية", "كيف أراجع قبل الامتحان؟"],
 };
 
 const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [mode, setMode] = useState<ChatMode>("tutor");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -57,20 +34,13 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const config = lessonContext
-    ? { ...MODE_CONFIG.tutor, suggestions: ["اشرح لي هذا الدرس ببساطة", "أعطني أمثلة عملية", "ما أهم النقاط في الدرس؟"] }
-    : MODE_CONFIG[mode];
+    ? { ...TUTOR_CONFIG, suggestions: ["اشرح لي هذا الدرس ببساطة", "أعطني أمثلة عملية", "ما أهم النقاط في الدرس؟"] }
+    : TUTOR_CONFIG;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const switchMode = (newMode: ChatMode) => {
-    if (newMode === mode) return;
-    setMode(newMode);
-    setMessages([]);
-    setInput("");
-    setError(null);
-  };
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -95,7 +65,7 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           context: lessonContext || undefined,
-          mode,
+          mode: "tutor",
         }),
       });
 
@@ -179,7 +149,7 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, lessonContext, mode, toast]);
+  }, [input, isLoading, messages, lessonContext, toast]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -212,29 +182,6 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
         )}
       </div>
 
-      {/* Mode Switcher - only when no lesson context */}
-      {!lessonContext && (
-        <div className="flex border-b border-border bg-muted/30 px-2 py-1.5 gap-1.5">
-          {(Object.keys(MODE_CONFIG) as ChatMode[]).map((m) => {
-            const Icon = MODE_CONFIG[m].icon;
-            const active = mode === m;
-            return (
-              <button
-                key={m}
-                onClick={() => switchMode(m)}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-background hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {MODE_CONFIG[m].label}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
