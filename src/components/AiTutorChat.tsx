@@ -188,7 +188,7 @@ const AiTutorChat = ({ lessonContext, inline }: AiTutorChatProps) => {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <ModeIcon className="h-8 w-8 text-primary" />
+              <Bot className="h-8 w-8 text-primary" />
             </div>
             <div>
               <p className="font-bold text-foreground">{config.welcome}</p>
