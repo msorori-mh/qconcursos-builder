@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
-type ChatMode = "tutor" | "support";
+
 
 interface AiTutorChatProps {
   lessonContext?: {
